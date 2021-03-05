@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^3.4.1",
-    "commander": "^7.1.0"
+    "commander": "^7.1.0",
+    "ipfs": "^0.54.2"
   }
 }
