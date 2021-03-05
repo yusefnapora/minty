@@ -62,12 +62,16 @@ class PinningClient {
         }
 
         console.log(`pinning ${cid} to ${this.serviceName} with options: `, options)
+        const addrs = await this.getAddrs()
 
         try {
+            const origins = addrs.map(a => a.toString())
+
             const {name, meta} = (options || {})
             const resp = await this.post('/pins', {
-                // name,
-                // meta,
+                name,
+                meta,
+                origins,
                 cid: cid.toString(),
             })
 
