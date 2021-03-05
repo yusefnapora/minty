@@ -4,15 +4,28 @@ const fs = require('fs').promises
 const path = require('path')
 const IPFS = require('ipfs')
 
+const {PinningClient} = require('./pin')
+
+/**
+ * @typedef {Object} AssetStorageConfig
+ * @property {Array<PinningServiceConfig>} pinningServices
+ */
+
 /**
  * AssetStorage coordinates storing assets to IPFS and pinning them for persistence.
  * Note that the class is not exported, since it requires async initialization.
  * @see MakeAssetStorage to construct.
  */
 class AssetStorage {
-    constructor() {
+
+    /**
+     * @param {AssetStorageConfig} config
+     */
+    constructor(config) {
+        this.config = config
         this._initialized = false
         this.ipfs = undefined
+        this.pinningClients = []
     }
 
     async init() {
@@ -22,6 +35,12 @@ class AssetStorage {
 
         // TODO: customize IPFS config?
         this.ipfs = await IPFS.create()
+
+        for (const svc of this.config.pinningServices) {
+            const client = new PinningClient(svc, () => this.ipfs.swarm.localAddrs())
+            this.pinningClients.push(client)
+        }
+
         this._initialized = true
     }
 
@@ -39,17 +58,13 @@ class AssetStorage {
      * or fails with an Error if something went wrong.
      */
     async addAsset(filename, assetData = null) {
-        if (!this._initialized) {
-            throw new Error("you must call .init() before using this object")
-        }
+        await this.init()
 
         // if the assetData is missing, try to read from the given filename
         if (assetData == null) {
             console.log('reading from ', filename)
             assetData = await fs.readFile(filename)
         }
-
-        console.log(`adding ${assetData.length} bytes to IPFS`)
 
         // Add the asset to IPFS
         const asset = await this.ipfs.add({
@@ -65,18 +80,30 @@ class AssetStorage {
     }
 
     async pin(cid) {
-        // TODO: use pinning services API to request pin
-        console.log("pretending to pin CID: ", cid)
+        await this.init()
+
+        if (this.pinningClients.length < 1) {
+            console.log('no pinning services configured, unable to pin ' + cid)
+            return
+        }
+
+        const promises = []
+        for (const client of this.pinningClients) {
+            promises.push(client.add(cid))
+        }
+        await Promise.all(promises)
+        console.log('pinned cid ', cid)
     }
 }
 
 /**
  * MakeAssetStorage returns an initialized AssetStorage instance.
  * Prefer this to constructing an instance and manually calling .init()
+ * @param {AssetStorageConfig} config
  * @returns {Promise<AssetStorage>}
  */
-async function MakeAssetStorage() {
-    const storage = new AssetStorage()
+async function MakeAssetStorage(config) {
+    const storage = new AssetStorage(config)
     await storage.init()
     return storage
 }

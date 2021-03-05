@@ -22,7 +22,10 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^3.4.1",
+    "bent": "^7.3.12",
+    "cids": "^1.1.6",
     "commander": "^7.1.0",
-    "ipfs": "^0.54.2"
+    "ipfs": "^0.54.2",
+    "multiaddr": "^8.1.2"
   }
 }

@@ -2,7 +2,13 @@
 const {MakeAssetStorage} = require('../storage')
 
 const defaultConfig = {
-    // TODO: add config options
+    pinningServices: [
+        {
+            name: "pinata",
+            endpoint: "https://api.pinata.cloud/psa",
+            apiToken: "env:PINATA_API_TOKEN",
+        }
+    ]
 }
 
 class Minty {
@@ -17,7 +23,8 @@ class Minty {
             return
         }
 
-        this.storage = await MakeAssetStorage()
+        const pinningServices = this.config.pinningServices || []
+        this.storage = await MakeAssetStorage({pinningServices})
         this._initialized = true
     }
 
