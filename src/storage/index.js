@@ -37,7 +37,7 @@ class AssetStorage {
         this.ipfs = await IPFS.create()
 
         for (const svc of this.config.pinningServices) {
-            const client = new PinningClient(svc, () => this.ipfs.swarm.localAddrs())
+            const client = new PinningClient(svc, this.ipfs)
             this.pinningClients.push(client)
         }
 
@@ -72,7 +72,7 @@ class AssetStorage {
             content: assetData
         })
 
-        console.log('added asset to IPFS: ', asset)
+        console.log('added asset to IPFS: ', asset.cid)
 
         // Pin the asset to make it persistent
         await this.pin(asset.cid)
@@ -87,6 +87,7 @@ class AssetStorage {
             return
         }
 
+        // pin to all services in parallel and await the result
         const promises = []
         for (const client of this.pinningClients) {
             promises.push(client.add(cid))
