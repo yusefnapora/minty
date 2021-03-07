@@ -2,7 +2,7 @@
 
 const fs = require('fs').promises
 const path = require('path')
-const IPFS = require('ipfs')
+const IPFS = require('ipfs-core')
 
 const {PinningClient} = require('./pin')
 
@@ -92,8 +92,12 @@ class AssetStorage {
         for (const client of this.pinningClients) {
             promises.push(client.add(cid))
         }
-        await Promise.all(promises)
-        console.log('pinned cid ', cid)
+        try {
+            await Promise.all(promises)
+            console.log('pinned cid ', cid)
+        } catch (e) {
+            console.error("Pinning error: ", e)
+        }
     }
 }
 
