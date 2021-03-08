@@ -5,6 +5,7 @@
 const {Command} = require('commander')
 
 const {createNFT} = require('./cmd/create-nft')
+const {deploy} = require('./cmd/deploy')
 
 async function main() {
     const program = new Command()
@@ -15,6 +16,11 @@ async function main() {
         .option('-d, --description', 'A description of the NFT')
         .action(createNFT)
 
+    program.command('deploy')
+        .description('deploy an instance of the Minty NFT contract')
+        .option('-n, --name <name>', 'The name of the token contract', 'Julep')
+        .option('-s, --symbol <symbol>', 'A short symbol for the tokens in this contract', 'JLP')
+        .action(deploy)
 
     await program.parseAsync(process.argv)
 }

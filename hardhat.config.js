@@ -1,8 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
 
-// support OpenZepplin upgradeable contracts
-require('@openzeppelin/hardhat-upgrades');
-
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("deploy-minty", "Deploys a new instance of the Minty contract with the specified name and symbol")
