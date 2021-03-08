@@ -1,5 +1,5 @@
-
 const {MakeAssetStorage} = require('../storage')
+const {MakeTokenMinterWithConfigFile} = require('../tokens/mint')
 
 const defaultConfig = {
     pinningServices: [
@@ -8,13 +8,16 @@ const defaultConfig = {
             endpoint: "https://api.pinata.cloud/psa",
             accessToken: () => process.env['PINATA_API_TOKEN'],
         }
-    ]
+    ],
+
+    deploymentConfigFile: 'minty-deployment.json'
 }
 
 class Minty {
     constructor(config) {
         this.config = config || defaultConfig
         this.storage = null
+        this.minter = null
         this._initialized = false
     }
 
@@ -23,12 +26,17 @@ class Minty {
             return
         }
 
+        // TODO: error handling
+        const {deploymentConfigFile} = this.config
+        this.minter = await MakeTokenMinterWithConfigFile(deploymentConfigFile)
+
         const pinningServices = this.config.pinningServices || []
         this.storage = await MakeAssetStorage({pinningServices})
         this._initialized = true
     }
 
     async createNFTFromImageFile(filePath, options) {
+        await this.init()
         console.log(`creating a new NFT using image at ${filePath}`)
 
         const assetCid = await this.storage.addAsset(filePath)
@@ -38,7 +46,10 @@ class Minty {
         const metadataCid = await this.storage.addAsset('metadata.json', JSON.stringify(metadata))
         console.log('metadata CID:', metadataCid)
 
-        const ownerAddress = options.ownerAddress || 'some-eth-addr'
+        let ownerAddress = options.owner
+        if (!ownerAddress) {
+            ownerAddress = await this.minter.defaultOwnerAddress()
+        }
         const tokenId = await this.mintToken(ownerAddress, metadataCid)
         console.log('token ID:', tokenId)
         return {
@@ -49,6 +60,7 @@ class Minty {
     }
 
     async makeNFTMetadata(assetCid, options) {
+        await this.init()
         const {name, description} = options;
         // TODO: input validation
 
@@ -61,8 +73,8 @@ class Minty {
     }
 
     async mintToken(ownerAddress, metadataCID) {
-        // TODO: blockchain bits
-        return "fake-token-id-" + Math.random()
+        await this.init()
+        return this.minter.mintToken(ownerAddress, metadataCID)
     }
 }
 

@@ -31,6 +31,8 @@ async function main() {
         .description('Create a new NFT from an image file')
         .option('-n, --name <name>', 'The name of the NFT')
         .option('-d, --description <desc>', 'A description of the NFT')
+        .option('-o, --owner <address>', 'The ethereum address that should own the NFT.' +
+            'If not provided, defaults to the first signing address.')
         .action(createNFT)
 
     program.command('deploy')

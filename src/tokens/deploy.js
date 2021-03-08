@@ -13,12 +13,19 @@ async function deployContract(name, symbol) {
     await minty.deployed()
     console.log(`deployed contract for token ${name} (${symbol}) to ${minty.address} (network: ${network})`);
 
-    // TODO: write the contract address, token name & symbol to a config file for later use
+    return deploymentInfo(hardhat, minty)
+}
 
-    // for now, try to get the contract by newing up a TokenMinter
-    const {MakeTokenMinter} = require('./mint')
-    const minter = await MakeTokenMinter({contractName: CONTRACT_NAME, contractAddress: minty.address})
-    console.log('got a minter without blowing up')
+function deploymentInfo(hardhat, minty) {
+    return {
+        network: hardhat.network.name,
+        contract: {
+            name: CONTRACT_NAME,
+            address: minty.address,
+            signerAddress: minty.signer.address,
+            abi: minty.interface.format(),
+        },
+    }
 }
 
 module.exports = {
