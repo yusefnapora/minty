@@ -6,7 +6,7 @@ const defaultConfig = {
         {
             name: "pinata",
             endpoint: "https://api.pinata.cloud/psa",
-            apiToken: "env:PINATA_API_TOKEN",
+            accessToken: () => process.env['PINATA_API_TOKEN'],
         }
     ]
 }

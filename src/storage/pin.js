@@ -8,7 +8,7 @@ const Multiaddr = require('multiaddr')
  * @typedef {Object} PinningServiceConfig
  * @property {string} name - a short name for the pinning service, e.g. "pinata"
  * @property {string} endpoint - the HTTPS endpoint URL for the pinning service
- * @property {string} apiToken - an API token for the service. If the token string starts with the special prefix "env:",
+ * @property {string} accessToken - an API token for the service. If the token string starts with the special prefix "env:",
  *   the remainder of the string will be used as the name of an environment variable, which must be non-empty.
  */
 
@@ -27,17 +27,14 @@ class PinningClient {
         this.config = config
         this.ipfs = ipfs
 
-        let {endpoint, apiToken} = config
+        const {endpoint, accessToken} = config
 
-        if (apiToken.startsWith('env:')) {
-            const key = apiToken.slice(4)
-            apiToken = process.env[key]
-            if (apiToken == null) {
-                throw new Error(`api token has magic "env:" prefix, but no env variable found named ${key}`)
-            }
+        let token = accessToken
+        if (typeof accessToken === 'function') {
+            token = accessToken()
         }
 
-        const headers = {Authorization: `Bearer ${apiToken}`}
+        const headers = {Authorization: `Bearer ${token}`}
         this.post = bent(endpoint, 'POST', 'json', headers, 200, 202) // POST, DEL, etc should return 202 on success
         this.get = bent(endpoint, 'json', headers)
     }
