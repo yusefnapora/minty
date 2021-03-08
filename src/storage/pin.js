@@ -2,45 +2,37 @@ const bent = require('bent')
 const CID = require('cids')
 const Multiaddr = require('multiaddr')
 
-/**
- * Assorted JSDoc type definitions
- *
- * @typedef {Object} PinningServiceConfig
- * @property {string} name - a short name for the pinning service, e.g. "pinata"
- * @property {string} endpoint - the HTTPS endpoint URL for the pinning service
- * @property {string} accessToken - an API token for the service. If the token string starts with the special prefix "env:",
- *   the remainder of the string will be used as the name of an environment variable, which must be non-empty.
- */
-
+const {PinningClient} = require('js-ipfs-pinning-service-client')
 
 /**
- * PinningClient is a basic client for the IPFS Pinning Service API
- * @see https://ipfs.github.io/pinning-services-api-spec/
+ * A Pinner coordinates requests to a remote IPFS Pinning Service,
  */
-class PinningClient {
+class Pinner {
     /**
-     * construct a new PinningClient for a pinning service
-     * @param {PinningServiceConfig} config - configuration for the Pinning Service provider
-     * @param {IPFS} ipfs - local ipfs object
+     * construct a new Pinner for a pinning service
+     *
+     * @callback tokenProvider
+     * @returns {string} a JWT access token for a pinning service
+     *
+     * @typedef {Object} PinningServiceConfig - configuration for the Pinning Service provider
+     * @property {string} name - a short name for the pinning service, e.g. "pinata"
+     * @property {string} endpoint - the HTTPS endpoint URL for the pinning service
+     * @property {string|tokenProvider} accessToken - a JWT access token for the service,
+     *   or a function that returns an access token
+     *
+     * @param {PinningServiceConfig} config
+     * @param {IPFS} ipfs - local IPFS object
      */
     constructor(config, ipfs) {
         this.config = config
         this.ipfs = ipfs
-
-        const {endpoint, accessToken} = config
-
-        let token = accessToken
-        if (typeof accessToken === 'function') {
-            token = accessToken()
-        }
-
-        const headers = {Authorization: `Bearer ${token}`}
-        this.post = bent(endpoint, 'POST', 'json', headers, 200, 202) // POST, DEL, etc should return 202 on success
-        this.get = bent(endpoint, 'json', headers)
+        console.log('making new PinningClient with config: ', config)
+        this.client = new PinningClient(config)
     }
 
     /**
-     * request that the pinning service add a pin for the given CID.
+     * Request that the pinning service add a pin for the given CID, and wait until the
+     * service confirms success or failure.
      * @param cid {CID | string}
      * @param {object} options pin-specific options. may be omitted.
      * @param {string} options.name name for pinned data.
@@ -48,56 +40,61 @@ class PinningClient {
      * @returns {Promise<void>}
      */
     async add(cid, options) {
-        if (!CID.isCID(cid)) {
-            cid = new CID(cid)
-        }
         options = options || {}
 
         console.log(`pinning ${cid} to ${this.serviceName} with options: `, options)
-        const addrs = await this._getAddrs()
-        const origins = addrs.map(a => a.toString())
-
-        try {
-            const alreadyPinned = await this.isPinned(cid)
-            if (alreadyPinned) {
-                console.log(`CID ${cid} already pinned, ignoring`)
-                return
-            }
-
-            const {name, meta} = options
-            const resp = await this.post('/pins', {
-                name,
-                meta,
-                origins,
-                cid: cid.toString(),
-            })
-
-            await this._handlePinResponse(resp)
-            return resp
-        } catch (e) {
-            if (e.json != null) {
-                const err = await e.json()
-                console.error('error details: ', err)
-                throw new Error('api error: ' + JSON.stringify(err))
-            } else {
-                throw e
-            }
+        const alreadyPinned = await this.isPinned(cid)
+        if (alreadyPinned) {
+            console.log(`CID ${cid} already pinned, ignoring`)
+            return
         }
 
+        const {name, meta} = options
+        const origins = await this._getOriginAddrs()
+        const resp = await this.client.add({
+            name,
+            meta,
+            origins,
+            cid: cid,
+        })
+
+        await this._handlePinResponse(resp)
+        return resp
     }
 
+    /**
+     * isPinned returns true if the given CID has been pinned by the remote service.
+     * @param {String|CID} cid
+     * @returns {Promise<boolean>}
+     */
     async isPinned(cid) {
-        const resp = await this.get('/pins?cid=' + cid)
+        const resp = await this.client.ls({cid})
         return resp.count > 0
     }
 
-    async _getAddrs() {
+    /**
+     * _getOriginAddrs is used to tell the remote pinning service how to find our IPFS content.
+     * Without this, they would have to do a DHT lookup first, which would take longer.
+     * @returns {Promise<Array<String>>} the string-encoded multiaddrs of the local IPFS node.
+     * @private
+     */
+    async _getOriginAddrs() {
         const {addresses} = await this.ipfs.id()
-        return addresses
+        return addresses.map(a => a.toString())
     }
 
+    /**
+     * _handlePinResponse accepts a PinResponse object and tries to connect the local IPFS node
+     * to all the addresses in the `delegates` field. This makes sure we can establish an IPFS
+     * connection even if we're behind a restrictive NAT and the service can't dial us directly.j
+     *
+     * After trying to connect, we call _waitForPinCompletion
+     * @param pinResponse a PinResponse object as returned by the remote service
+     * @returns {Promise<void>} resolves with no value on success, or throws on error.
+     * @private
+     */
     async _handlePinResponse(pinResponse) {
-        console.log('pin requested: ', JSON.stringify(pinResponse, null, 2))
+        // console.log('pin response: ', JSON.stringify(pinResponse, null, 2))
         const addrs = pinResponse.delegates || []
 
         const promises = []
@@ -114,27 +111,39 @@ class PinningClient {
         return this._waitForPinCompletion(pinResponse)
     }
 
+    /**
+     * _waitForPinCompletion periodically polls the status of the pin referenced in the given PinResponse until
+     * the pin request is successful or fails.
+     * @param pinResponse a PinResponse object as returned by the remote service
+     * @returns {Promise<void>} resolves with no value on success, or throws on error.
+     * @private
+     */
     async _waitForPinCompletion(pinResponse) {
-        if (pinResponse.status == null) {
-            throw new Error('pin response is missing required status field')
-        }
+        while (true) {
+            // The status field is required, so if it's missing something went wrong.
+            if (pinResponse.status == null) {
+                throw new Error('pin response is missing required status field')
+            }
+            if (pinResponse.status === 'failed') {
+                throw new Error(`pin request ${pinResponse.requestid} failed: ` + JSON.stringify(pinResponse.info))
+            }
 
-        if (pinResponse.status === 'pinned') {
-            console.log(`CID ${pinResponse.pin.cid} pinned successfully`)
-            return
-        }
-        if (pinResponse.status === 'failed') {
-            console.error(`pin request ${pinResponse.requestid} failed: `, pinResponse.info)
-            return
-        }
+            if (pinResponse.status === 'pinned') {
+                console.log(`CID ${pinResponse.pin.cid} pinned successfully`)
+                return
+            }
 
-        const waitMs = 200
-        console.log(`pin status for ${pinResponse.pin.cid}: ${pinResponse.status}. waiting ${waitMs} ms...`)
-        await delay(waitMs)
-        pinResponse = await this.get(`/pins/${pinResponse.requestid}`)
-        return this._waitForPinCompletion(pinResponse)
+
+            const waitMs = 200
+            console.log(`pin status for ${pinResponse.pin.cid}: ${pinResponse.status}. waiting ${waitMs} ms...`)
+            await delay(waitMs)
+            pinResponse = await this.client.get(pinResponse.requestid)
+        }
     }
 
+    /**
+     * @returns {string} the name of the remote pinning service
+     */
     get serviceName() {
         return this.config.name || 'unnamed pinning service'
     }
@@ -147,5 +156,5 @@ function delay(ms) {
 }
 
 module.exports = {
-    PinningClient
+    Pinner
 }

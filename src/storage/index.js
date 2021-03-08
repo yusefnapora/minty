@@ -4,12 +4,7 @@ const fs = require('fs').promises
 const path = require('path')
 const IPFS = require('ipfs-core')
 
-const {PinningClient} = require('./pin')
-
-/**
- * @typedef {Object} AssetStorageConfig
- * @property {Array<PinningServiceConfig>} pinningServices
- */
+const {Pinner} = require('./pin')
 
 /**
  * AssetStorage coordinates storing assets to IPFS and pinning them for persistence.
@@ -19,13 +14,14 @@ const {PinningClient} = require('./pin')
 class AssetStorage {
 
     /**
-     * @param {AssetStorageConfig} config
+     * @param {Object} config
+     * @param {Array<PinningServiceConfig>} config.pinningServices
      */
     constructor(config) {
         this.config = config
         this._initialized = false
         this.ipfs = undefined
-        this.pinningClients = []
+        this.pinners = []
     }
 
     async init() {
@@ -37,8 +33,8 @@ class AssetStorage {
         this.ipfs = await IPFS.create()
 
         for (const svc of this.config.pinningServices) {
-            const client = new PinningClient(svc, this.ipfs)
-            this.pinningClients.push(client)
+            const client = new Pinner(svc, this.ipfs)
+            this.pinners.push(client)
         }
 
         this._initialized = true
@@ -79,23 +75,29 @@ class AssetStorage {
         return asset.cid
     }
 
+    /**
+     * pin sends requests to all configured remote pinning services to pin the given CID.
+     * @param cid
+     * @returns {Promise<void>}
+     */
     async pin(cid) {
         await this.init()
 
-        if (this.pinningClients.length < 1) {
+        if (this.pinners.length < 1) {
             console.log('no pinning services configured, unable to pin ' + cid)
             return
         }
 
         // pin to all services in parallel and await the result
         const promises = []
-        for (const client of this.pinningClients) {
+        for (const client of this.pinners) {
             promises.push(client.add(cid))
         }
         try {
             await Promise.all(promises)
             console.log('pinned cid ', cid)
         } catch (e) {
+            // TODO: propagate errors
             console.error("Pinning error: ", e)
         }
     }
