@@ -1,4 +1,3 @@
-const bent = require('bent')
 const CID = require('cids')
 const Multiaddr = require('multiaddr')
 
