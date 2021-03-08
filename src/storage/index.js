@@ -14,8 +14,10 @@ const {Pinner} = require('./pin')
 class AssetStorage {
 
     /**
-     * @param {Object} config
+     * @typedef {Object} AssetStorageConfig
      * @param {Array<PinningServiceConfig>} config.pinningServices
+     *
+     * @param {AssetStorageConfig} config
      */
     constructor(config) {
         this.config = config
