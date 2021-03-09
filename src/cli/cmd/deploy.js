@@ -1,6 +1,6 @@
 
 const fs = require('fs/promises')
-const {deployContract} = require('../../tokens/deploy')
+const {deployContract} = require('../../tokens')
 
 async function deploy(options) {
     const info = await deployContract(options.name, options.symbol)

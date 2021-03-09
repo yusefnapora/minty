@@ -1,5 +1,5 @@
 
-const {MakeMinty} = require('../../minty')
+const {MakeMinty} = require('../../index')
 
 async function createNFT(imagePath, options) {
 
