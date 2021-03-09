@@ -49,7 +49,7 @@ the right contract.
 The default config currently assumes that you'll be pinning to Pinata, and that you
 have a Pinata JWT token in an environment variable named `PINATA_API_TOKEN`.
 
-If you don't have a key, edit the default config in `src/minty/index.js` and remove the
+If you don't have a key, edit the default config in `src/minty.js` and remove the
 pinata entry from the `pinningServices` array.
 
 ### Mint a new NFT

@@ -2,12 +2,12 @@
   "name": "minty",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/minty.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "minty": "./src/cli/index.js"
+    "minty": "src/index.js"
   },
   "keywords": [],
   "author": "",

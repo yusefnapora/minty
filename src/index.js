@@ -1,152 +1,78 @@
-const {MakeAssetStorage} = require('./storage')
-const {MakeTokenMinterWithConfigFile} = require('./tokens')
+#!/usr/bin/env node
 
-const defaultConfig = {
-    pinningServices: [
-        {
-            name: "pinata",
-            endpoint: "https://api.pinata.cloud/psa",
-            accessToken: () => process.env['PINATA_API_TOKEN'],
-        }
-    ],
+const fs = require('fs/promises')
+const {Command} = require('commander')
+const {MakeMinty} = require('./minty')
+const {deployContract} = require('./tokens')
 
-    deploymentConfigFile: 'minty-deployment.json'
+async function main() {
+    const program = new Command()
+
+    // commands
+    program
+        .command('create-nft <image-path>')
+        .description('Create a new NFT from an image file')
+        .option('-n, --name <name>', 'The name of the NFT')
+        .option('-d, --description <desc>', 'A description of the NFT')
+        .option('-o, --owner <address>', 'The ethereum address that should own the NFT.' +
+            'If not provided, defaults to the first signing address.')
+        .action(createNFT)
+
+    program.command('get-nft <token-id>')
+        .description('Get info about an NFT using its token ID')
+        .option('-c, --creation-info', 'include the creator address and block number the NFT was minted')
+        .action(getNFT)
+
+    program.command('deploy')
+        .description('deploy an instance of the Minty NFT contract')
+        .option('-n, --name <name>', 'The name of the token contract', 'Julep')
+        .option('-s, --symbol <symbol>', 'A short symbol for the tokens in this contract', 'JLP')
+        .action(deploy)
+
+    await program.parseAsync(process.argv)
 }
 
-class Minty {
-    constructor(config) {
-        this.config = config || defaultConfig
-        this.storage = null
-        this.minter = null
-        this._initialized = false
-    }
+// ---- command action functions
 
-    async init() {
-        if (this._initialized) {
-            return
-        }
+async function createNFT(imagePath, options) {
 
-        // TODO: error handling
-        const {deploymentConfigFile} = this.config
-        this.minter = await MakeTokenMinterWithConfigFile(deploymentConfigFile)
+    // TODO: pull global options out / read config file and pass opts to MakeMinty
+    const minty = await MakeMinty()
 
-        const pinningServices = this.config.pinningServices || []
-        this.storage = await MakeAssetStorage({pinningServices})
-        this._initialized = true
-    }
-
-    async createNFTFromImageFile(filePath, options) {
-        await this.init()
-        console.log(`creating a new NFT using image at ${filePath}`)
-
-        const assetCid = await this.storage.addAsset(filePath)
-        console.log('asset CID: ', assetCid)
-
-        const metadata = await this.makeNFTMetadata(assetCid, options)
-        const metadataCid = await this.storage.addAsset('metadata.json', JSON.stringify(metadata))
-        console.log('metadata CID:', metadataCid)
-
-        let ownerAddress = options.owner
-        if (!ownerAddress) {
-            ownerAddress = await this.minter.defaultOwnerAddress()
-        }
-        const tokenId = await this.mintToken(ownerAddress, metadataCid)
-        // console.log('token ID:', tokenId)
-        return {
-            assetCid,
-            metadataCid,
-            tokenId
-        }
-    }
-
-    async makeNFTMetadata(assetCid, options) {
-        await this.init()
-        const {name, description} = options;
-        // TODO: input validation
-
-        const assetURI = `ipfs://${assetCid}`
-        return {
-            name,
-            description,
-            image: assetURI
-        }
-    }
-
-    async mintToken(ownerAddress, metadataCID) {
-        await this.init()
-        return this.minter.mintToken(ownerAddress, metadataCID)
-    }
-
-    /**
-     * @typedef {object} ERC721Metadata
-     * @property {?string} name
-     * @property {?string} description
-     * @property {string} image
-     *
-     * @param tokenId
-     * @returns {Promise<{metadata: ERC721Metadata, metadataURI: string}>}
-     */
-    async getNFTMetadata(tokenId) {
-        await this.init()
-
-        const metadataURI = await this.minter.getTokenURI(tokenId)
-        const metadataJsonString = await this.storage.getString(metadataURI)
-        const metadata = JSON.parse(metadataJsonString)
-
-        return {metadata, metadataURI}
-    }
-
-    /**
-     *
-     * @typedef {object} NFTInfo
-     * @property {string} tokenId
-     * @property {string} ownerAddress
-     * @property {ERC721Metadata} metadata
-     * @property {string} metadataURI
-     * @property {?string} assetDataBase64
-     * @property {?object} creationInfo
-     * @property {string} creationInfo.creatorAddress
-     * @property {number} creationInfo.blockNumber
-     *
-     * @param {string} tokenId
-     * @param {object} opts
-     * @param {?boolean} opts.fetchAsset - if true, asset data will be fetched from IPFS and returned in assetData
-     * @param {?boolean} opts.fetchCreationInfo - if true, fetch historical info (creator address and block number)
-     * @returns {Promise<NFTInfo>}
-     */
-    async getNFT(tokenId, opts) {
-        await this.init()
-
-        const {metadata, metadataURI} = await this.getNFTMetadata(tokenId)
-        const ownerAddress = await this.minter.getTokenOwner(tokenId)
-        const nft = {tokenId, metadata, metadataURI, ownerAddress}
-
-        const {fetchAsset, fetchCreationInfo} = (opts || {})
-        if (metadata.image && fetchAsset) {
-            nft.assetDataBase64 = await this.storage.getBase64String(metadata.image)
-        }
-
-        if (fetchCreationInfo) {
-            nft.creationInfo = await this.minter.getCreationInfo(tokenId)
-        }
-        return nft
-    }
-
-    get hardhat() {
-        return this.minter.hardhat
-    }
-
-    get contractAddress() {
-        return this.minter.contractAddress
-    }
+    const info = await minty.createNFTFromImageFile(imagePath, options)
+    console.log(`we did it! token info: `, info)
 }
 
-async function MakeMinty(config = null) {
-    const m = new Minty(config)
-    await m.init()
-    return m
+async function getNFT(tokenId, options) {
+
+    // TODO: pull global options out / read config file and pass opts to MakeMinty
+    const minty = await MakeMinty()
+
+    const fetchCreationInfo = options.creationInfo
+    const info = await minty.getNFT(tokenId, {fetchCreationInfo})
+    console.log(info)
 }
 
-module.exports = {
-    MakeMinty,
+async function deploy(options) {
+    const info = await deployContract(options.name, options.symbol)
+
+    // TODO: add option to control where to write deployment info
+    const filename = 'minty-deployment.json'
+    console.log(`writing deployment info to ${filename}`)
+    await saveDeployInfo(filename, info)
 }
+
+async function saveDeployInfo(filename, info) {
+    return fs.writeFile(filename, JSON.stringify(info, null, 2))
+}
+
+
+// ---- main entry point when running as a script
+
+// make sure we catch all errors
+main().then(() => {
+    process.exit(0)
+}).catch(err => {
+    console.error(err)
+    process.exit(1)
+})
