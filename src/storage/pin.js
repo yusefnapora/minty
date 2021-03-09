@@ -1,7 +1,7 @@
 const CID = require('cids')
 const Multiaddr = require('multiaddr')
 
-const {PinningClient} = require('js-ipfs-pinning-service-client')
+const PinningClient = require('js-ipfs-pinning-service-client')
 
 /**
  * A Pinner coordinates requests to a remote IPFS Pinning Service,
