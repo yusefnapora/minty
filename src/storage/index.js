@@ -35,7 +35,7 @@ class AssetStorage {
         }
 
         // TODO: customize IPFS config?
-        this.ipfs = await IPFS.create()
+        this.ipfs = await IPFS.create({silent: true})
 
         for (const svc of this.config.pinningServices) {
             const client = new Pinner(svc, this.ipfs)

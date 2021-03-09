@@ -33,8 +33,8 @@ class TokenMinter {
         }
 
         const {abi, address} = this.config.contract
-        console.log(`minter connected to contract at address ${address} (network: ${this.hardhat.network.name})`)
         this.contract = await hardhat.ethers.getContractAt(abi, address)
+        // console.log(`minter connected to contract at address ${address} (network: ${hardhat.network.name})`)
         this._initialized = true
     }
 
@@ -71,7 +71,7 @@ class TokenMinter {
     async getTokenURI(tokenId) {
         await this.init()
         const result = await this.contract.tokenURI(BigNumber.from(tokenId))
-        console.log(`found URI for token ${tokenId}: ${result}`)
+        // console.log(`found URI for token ${tokenId}: ${result}`)
         return result
     }
 

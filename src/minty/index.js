@@ -92,7 +92,6 @@ class Minty {
         const metadataURI = await this.minter.getTokenURI(tokenId)
         const metadataJsonString = await this.storage.getString(metadataURI)
         const metadata = JSON.parse(metadataJsonString)
-        console.log('got metadata: ', metadata)
 
         return {metadata, metadataURI}
     }

@@ -25,7 +25,6 @@ class Pinner {
     constructor(config, ipfs) {
         this.config = config
         this.ipfs = ipfs
-        console.log('making new PinningClient with config: ', config)
         this.client = new PinningClient(config)
     }
 
