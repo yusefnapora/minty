@@ -5,6 +5,7 @@
 const {Command} = require('commander')
 
 const {createNFT} = require('./cmd/create-nft')
+const {getNFT} = require('./cmd/get-nft')
 const {deploy} = require('./cmd/deploy')
 
 const DEFAULT_NETWORK = 'localhost'
@@ -34,6 +35,11 @@ async function main() {
         .option('-o, --owner <address>', 'The ethereum address that should own the NFT.' +
             'If not provided, defaults to the first signing address.')
         .action(createNFT)
+
+    program.command('get-nft <token-id>')
+        .description('Get info about an NFT using its token ID')
+        .option('-c, --creation-info', 'include the creator address and block number the NFT was minted')
+        .action(getNFT)
 
     program.command('deploy')
         .description('deploy an instance of the Minty NFT contract')
