@@ -1,6 +1,9 @@
 // the storage module will be responsible for adding and pinning assets to IPFS and creating NFT metadata
 
 const fs = require('fs').promises
+const all = require('it-all')
+const uint8ArrayConcat = require('uint8arrays/concat')
+const uint8ArrayToString = require('uint8arrays/to-string')
 const path = require('path')
 const IPFS = require('ipfs-core')
 
@@ -102,6 +105,25 @@ class AssetStorage {
             // TODO: propagate errors
             console.error("Pinning error: ", e)
         }
+    }
+
+    async get(cidOrURI) {
+        let cid = cidOrURI
+        if (cidOrURI.startsWith('ipfs://')) {
+            cid = cidOrURI.slice('ipfs://'.length)
+        }
+
+        return uint8ArrayConcat(await all(this.ipfs.cat(cid)))
+    }
+
+    async getString(cidOrURI) {
+        const bytes = await this.get(cidOrURI)
+        return uint8ArrayToString(bytes)
+    }
+
+    async getBase64String(cidOrURI) {
+        const bytes = await this.get(cidOrURI)
+        return uint8ArrayToString(bytes, 'base64')
     }
 }
 

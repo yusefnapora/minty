@@ -76,6 +76,70 @@ class Minty {
         await this.init()
         return this.minter.mintToken(ownerAddress, metadataCID)
     }
+
+    /**
+     * @typedef {object} ERC721Metadata
+     * @property {?string} name
+     * @property {?string} description
+     * @property {string} image
+     *
+     * @param tokenId
+     * @returns {Promise<{metadata: ERC721Metadata, metadataURI: string}>}
+     */
+    async getNFTMetadata(tokenId) {
+        await this.init()
+
+        const metadataURI = await this.minter.getTokenURI(tokenId)
+        const metadataJsonString = await this.storage.getString(metadataURI)
+        const metadata = JSON.parse(metadataJsonString)
+        console.log('got metadata: ', metadata)
+
+        return {metadata, metadataURI}
+    }
+
+    /**
+     *
+     * @typedef {object} NFTInfo
+     * @property {string} tokenId
+     * @property {string} ownerAddress
+     * @property {ERC721Metadata} metadata
+     * @property {string} metadataURI
+     * @property {?string} assetDataBase64
+     * @property {?object} creationInfo
+     * @property {string} creationInfo.creatorAddress
+     * @property {number} creationInfo.blockNumber
+     *
+     * @param {string} tokenId
+     * @param {object} opts
+     * @param {?boolean} opts.fetchAsset - if true, asset data will be fetched from IPFS and returned in assetData
+     * @param {?boolean} opts.fetchCreationInfo - if true, fetch historical info (creator address and block number)
+     * @returns {Promise<NFTInfo>}
+     */
+    async getNFT(tokenId, opts) {
+        await this.init()
+
+        const {metadata, metadataURI} = await this.getNFTMetadata(tokenId)
+        const ownerAddress = await this.minter.getTokenOwner(tokenId)
+        const nft = {tokenId, metadata, metadataURI, ownerAddress}
+
+        const {fetchAsset, fetchCreationInfo} = (opts || {})
+        if (metadata.image && fetchAsset) {
+            nft.assetDataBase64 = await this.storage.getBase64String(metadata.image)
+        }
+
+        if (fetchCreationInfo) {
+            nft.creationInfo = await this.minter.getCreationInfo(tokenId)
+        }
+        return nft
+    }
+
+    get hardhat() {
+        return this.minter.hardhat
+    }
+
+    get contractAddress() {
+        return this.minter.contractAddress
+    }
 }
 
 async function MakeMinty(config = null) {

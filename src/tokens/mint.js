@@ -1,4 +1,5 @@
 
+const {BigNumber} = require('ethers')
 const {hardhatRuntime} = require('./runtime')
 
 class TokenMinter {
@@ -39,15 +40,15 @@ class TokenMinter {
         this._initialized = true
     }
 
-    async mintToken(ownerAddress, metadataURI) {
+    async mintToken(ownerAddress, metadataCID) {
         await this.init()
 
-        console.log('minting new token for metadata uri: ', metadataURI)
+        console.log('minting new token for metadata CID: ', metadataCID)
 
         // Call the mintToken method to issue a new token to the given address
         // This returns a transaction object, but the transaction hasn't been confirmed
         // yet, so it doesn't have our token id.
-        const tx = await this.contract.mintToken(ownerAddress, metadataURI)
+        const tx = await this.contract.mintToken(ownerAddress, metadataCID.toString())
 
         // The OpenZeppelin base ERC721 contract emits a Transfer event when a token is issued.
         // tx.wait() will wait until a block containing our transaction has been mined and confirmed.
@@ -67,6 +68,41 @@ class TokenMinter {
     async defaultOwnerAddress() {
         const signers = await this.hardhat.ethers.getSigners()
         return signers[0].address
+    }
+
+    async getTokenURI(tokenId) {
+        await this.init()
+        const result = await this.contract.tokenURI(BigNumber.from(tokenId))
+        console.log(`found URI for token ${tokenId}: ${result}`)
+        return result
+    }
+
+    async getTokenOwner(tokenId) {
+        await this.init()
+        return this.contract.ownerOf(tokenId)
+    }
+
+    async getCreationInfo(tokenId) {
+        await this.init()
+
+
+        const filter = await this.contract.filters.Transfer(
+            null,
+            null,
+            BigNumber.from(tokenId)
+        )
+
+        const logs = await this.contract.queryFilter(filter)
+        const blockNumber = logs[0].blockNumber
+        const creatorAddress = logs[0].args.to
+        return {
+            blockNumber,
+            creatorAddress,
+        }
+    }
+
+    get contractAddress() {
+        return this.config.contract.address
     }
 }
 

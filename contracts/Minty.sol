@@ -9,18 +9,20 @@ contract Minty is ERC721 {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    constructor(string memory tokenName, string memory symbol) public ERC721(tokenName, symbol) {}
+    constructor(string memory tokenName, string memory symbol) ERC721(tokenName, symbol) {
+        _setBaseURI("ipfs://");
+    }
 
-    function mintToken(address owner, string memory tokenURI)
+    function mintToken(address owner, string memory metadataCID)
     public
     returns (uint256)
     {
         _tokenIds.increment();
 
-        uint256 newItemId = _tokenIds.current();
-        _mint(owner, newItemId);
-        _setTokenURI(newItemId, tokenURI);
+        uint256 id = _tokenIds.current();
+        _safeMint(owner, id);
+        _setTokenURI(id, metadataCID);
 
-        return newItemId;
+        return id;
     }
 }
