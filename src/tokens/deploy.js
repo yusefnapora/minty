@@ -1,9 +1,8 @@
 
-const {hardhatRuntime} = require('./runtime')
+const hardhat = require('hardhat')
 const CONTRACT_NAME = "Minty"
 
 async function deployContract(name, symbol) {
-    const hardhat = hardhatRuntime()
     const network = hardhat.network.name
 
     console.log(`deploying contract for token ${name} (${symbol}) to network "${network}"...`)

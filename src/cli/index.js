@@ -8,23 +8,8 @@ const {createNFT} = require('./cmd/create-nft')
 const {getNFT} = require('./cmd/get-nft')
 const {deploy} = require('./cmd/deploy')
 
-const DEFAULT_NETWORK = 'localhost'
-
 async function main() {
     const program = new Command()
-
-    // global options
-    program.option('--network <network>',
-        'The ethereum network to use. Must be configured in hardhat.config.js',
-        DEFAULT_NETWORK)
-
-    // global options don't get merged with command options, so we set an event listener
-    // to grab the value and muck with global state.  ¯\_(ツ)_/¯
-    // see: https://github.com/tj/commander.js/issues/789
-    program.on('option:network', function () {
-        // the HARDHAT_NETWORK env variable gets picked up when you `require('hardhat')`
-        process.env['HARDHAT_NETWORK'] = this.opts().network
-    })
 
     // commands
     program

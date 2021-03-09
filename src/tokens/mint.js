@@ -1,13 +1,12 @@
 
 const {BigNumber} = require('ethers')
-const {hardhatRuntime} = require('./runtime')
+const hardhat = require('hardhat')
 
 class TokenMinter {
     constructor(config) {
         this._validateConfig(config)
 
         this.config = config
-        this.hardhat = null
         this.contract = null
         this._initialized = false
     }
@@ -34,9 +33,8 @@ class TokenMinter {
         }
 
         const {abi, address} = this.config.contract
-        this.hardhat = hardhatRuntime()
-        this.contract = await this.hardhat.ethers.getContractAt(abi, address)
         console.log(`minter connected to contract at address ${address} (network: ${this.hardhat.network.name})`)
+        this.contract = await hardhat.ethers.getContractAt(abi, address)
         this._initialized = true
     }
 
@@ -66,7 +64,7 @@ class TokenMinter {
     }
 
     async defaultOwnerAddress() {
-        const signers = await this.hardhat.ethers.getSigners()
+        const signers = await hardhat.ethers.getSigners()
         return signers[0].address
     }
 
