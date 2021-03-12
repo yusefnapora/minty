@@ -45,6 +45,8 @@ the right contract.
 Currently the `minty` command must be run from inside the root directory of this repository, since it will try to
 read some configuration files at launch.
 
+Run `minty --help` to see usage instructions.
+
 ### Configuration
 
 Some configuration is stored in [`./config/default.js`](./config/default.js).
@@ -126,15 +128,6 @@ minty show 1
 The assets for new tokens are stored in a local IPFS repository, which is only "online" temporarily while
 running `minty` commands.
 
-You can make the data available when `minty` is not running by installing `js-ipfs` globally, and running the IPFS daemon:
-
-```shell
-npm install -g ipfs
-js-ipfs daemon
-```
-
-This will use the same local repository as Minty, and will provide your data to the IPFS network as long as your computer is online.
-
 To make the data highly available without needing to run a local IPFS daemon 24/7, you can request that a [Remote Pinning Service][pinning-service-api] like [Pinata](https://pinata.cloud) store a copy of your IPFS data on their IPFS nodes.
 
 See the [configuration section](#configuration) above for details on setting up the pinning service credentials.
@@ -148,6 +141,15 @@ Pinning asset data (ipfs://QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ) for t
 Pinning metadata (ipfs://QmUJibEFFTNEbvof9AroJK8m4HBUz427FTX8ejW2FoZpzn) for token id 6...
 Pinned all data for token id 6
 ```
+
+Instead of or in addition to pinning data remotely, you can make the data available when `minty` is not running by installing `js-ipfs` globally, and running the IPFS daemon:
+
+```shell
+npm install -g ipfs
+js-ipfs daemon
+```
+
+This will use the same local repository as Minty, and will provide your data to the IPFS network as long as your computer is online.
 
 [pinning-service-api]: https://ipfs.github.io/pinning-services-api-spec/
 
