@@ -5,14 +5,18 @@ const all = require('it-all')
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayToString = require('uint8arrays/to-string')
 const config = require('getconfig')
+const hardhat = require('hardhat')
 
-const { MakeTokenMinter } = require('./tokens')
 
+const { loadDeploymentInfo } = require('./deploy')
+
+/**
+ * Minty is the main object 
+ */
 class Minty {
     constructor() {
         this.ipfs = undefined
         this.pinningServices = []
-        this.minter = null
         this._initialized = false
     }
 
@@ -21,24 +25,23 @@ class Minty {
             return
         }
 
-        // create a new TokenMinter to deal with smart contract stuff (see tokens.js)
-        this.minter = await MakeTokenMinter()
+        // the Minty object expects that the contract has already been deployed, with
+        // details written to a deployment info file. The default location is `./minty-deployment.json`,
+        // in the config.
+        this.deployInfo = await loadDeploymentInfo()
+
+        // connect to the smart contract using the address and ABI from the deploy info
+        const {abi, address} = this.deployInfo.contract
+        this.contract = await hardhat.ethers.getContractAt(abi, address)
 
         // create a local IPFS node
         const silent = !config.showIPFSLogs
         this.ipfs = await IPFS.create({silent})
 
-        // tell IPFS to use each configured pinning service
-        for (const svc of config.pinningServices) {
-            const {name, endpoint, accessToken: key} = svc
-
-            // FIXME: this will fail if the service has already been added. check if it exists first.
-            await this.ipfs.pin.remote.service.add(name, {endpoint, key})
-            this.pinningServices.push(name)
-        }
-
         this._initialized = true
     }
+
+    // ------ NFT Creation
 
     async createNFTFromAssetData(content, options) {
         // add the asset to IPFS
@@ -54,11 +57,11 @@ class Minty {
         // get the address of the token owner from options, or use the default signing address if no owner is given
         let ownerAddress = options.owner
         if (!ownerAddress) {
-            ownerAddress = await this.minter.defaultOwnerAddress()
+            ownerAddress = await this.defaultOwnerAddress()
         }
 
         // mint a new token referencing the metadata CID
-        const tokenId = await this.minter.mintToken(ownerAddress, metadataCid)
+        const tokenId = await this.mintToken(ownerAddress, metadataCid)
 
         return {
             tokenId,
@@ -83,6 +86,9 @@ class Minty {
         }
     }
 
+
+    // -------- NFT Retreival
+
     /**
      * @typedef {object} ERC721Metadata
      * @property {?string} name
@@ -93,7 +99,7 @@ class Minty {
      * @returns {Promise<{metadata: ERC721Metadata, metadataURI: string}>}
      */
     async getNFTMetadata(tokenId) {
-        const metadataURI = await this.minter.getTokenURI(tokenId)
+        const metadataURI = await this.getTokenURI(tokenId)
         const metadata = await this.getIPFSJSON(metadataURI)
 
         return {metadata, metadataURI}
@@ -119,7 +125,7 @@ class Minty {
      */
     async getNFT(tokenId, opts) {
         const {metadata, metadataURI} = await this.getNFTMetadata(tokenId)
-        const ownerAddress = await this.minter.getTokenOwner(tokenId)
+        const ownerAddress = await this.getTokenOwner(tokenId)
         const nft = {tokenId, metadata, metadataURI, ownerAddress}
 
         const {fetchAsset, fetchCreationInfo} = (opts || {})
@@ -128,16 +134,78 @@ class Minty {
         }
 
         if (fetchCreationInfo) {
-            nft.creationInfo = await this.minter.getCreationInfo(tokenId)
+            nft.creationInfo = await this.getCreationInfo(tokenId)
         }
         return nft
     }
 
 
+    // --------- Smart contract interactions
+
+    async mintToken(ownerAddress, metadataCID) {
+        await this.init()
+
+        console.log('minting new token for metadata CID: ', metadataCID)
+
+        // Call the mintToken method to issue a new token to the given address
+        // This returns a transaction object, but the transaction hasn't been confirmed
+        // yet, so it doesn't have our token id.
+        const tx = await this.contract.mintToken(ownerAddress, metadataCID.toString())
+
+        // The OpenZeppelin base ERC721 contract emits a Transfer event when a token is issued.
+        // tx.wait() will wait until a block containing our transaction has been mined and confirmed.
+        // The transaction receipt contains events emitted while processing the transaction.
+        const receipt = await tx.wait()
+        for (const event of receipt.events) {
+            if (event.event !== 'Transfer') {
+                console.log('ignoring unknown event type ', event.event)
+                continue
+            }
+            return event.args.tokenId.toString()
+        }
+
+        throw new Error('unable to get token id')
+    }
+
+    async defaultOwnerAddress() {
+        const signers = await hardhat.ethers.getSigners()
+        return signers[0].address
+    }
+
+    async getTokenURI(tokenId) {
+        await this.init()
+        const result = await this.contract.tokenURI(BigNumber.from(tokenId))
+        // console.log(`found URI for token ${tokenId}: ${result}`)
+        return result
+    }
+
+    async getTokenOwner(tokenId) {
+        await this.init()
+        return this.contract.ownerOf(tokenId)
+    }
+
+    async getCreationInfo(tokenId) {
+        await this.init()
+
+        const filter = await this.contract.filters.Transfer(
+            null,
+            null,
+            BigNumber.from(tokenId)
+        )
+
+        const logs = await this.contract.queryFilter(filter)
+        const blockNumber = logs[0].blockNumber
+        const creatorAddress = logs[0].args.to
+        return {
+            blockNumber,
+            creatorAddress,
+        }
+    }
+
     // --------- IPFS helpers
 
     async getIPFS(cidOrURI) {
-        const cid = cidFromURI(cidOrURI)
+        const cid = stripIpfsUriPrefix(cidOrURI)
         return uint8ArrayConcat(await all(this.ipfs.cat(cid)))
     }
 
@@ -157,78 +225,111 @@ class Minty {
     }
 
 
-    // -------- pinning 
+    // -------- Pinning to remote services
 
+    /**
+     * Pins all IPFS data associated with the given tokend id to the remote pinning service.
+     * @param {*} tokenId - the ID of an NFT that was previously minted.
+     * @returns {Promise<{assetURI: string, metadataURI: string}>} - the IPFS asset and metadata uris that were pinned.
+     * @throws if no token with the given id exists, or if pinning fails.
+     */
     async pinTokenData(tokenId) {
         const {metadata, metadataURI} = await this.getNFTMetadata(tokenId)
         const {image: assetURI} = metadata
         
         console.log(`Pinning asset data (${assetURI}) for token id ${tokenId}....`)
         await this.pin(assetURI)
-        
+
         console.log(`Pinning metadata (${metadataURI}) for token id ${tokenId}...`)
         await this.pin(metadataURI)
 
         return {assetURI, metadataURI}
     }
 
+    /**
+     * Request that the remote pinning service pin the given CID or ipfs URI.
+     * @param {string} cidOrURI - a CID or ipfs:// URI
+     * @returns {Promise<void>}
+     */
     async pin(cidOrURI) {
-        const cid = cidFromURI(cidOrURI)
-        if (this.pinningServices.length < 1) {
-            console.log('no pinning services configured, unable to pin ' + cid)
-            return
-        }
+        const cid = stripIpfsUriPrefix(cidOrURI)
 
+        // Make sure IPFS is set up to use our preferred pinning service.
+        await this._configurePinningService()
 
-        // pin to all services in parallel and await the result
-        const promises = []
-        for (const service of this.pinningServices) {
-            promises.push(this._pinIfUnpinned(cid, service))
-        }
-        try {
-            await Promise.all(promises)
-        } catch (e) {
-            // TODO: propagate errors
-            console.error("Pinning error: ", e)
-        }
-    }
-
-    async _pinIfUnpinned(cid, service) {
-        const pinned = await this.isPinned(cid, service)
+        // Check if we've already pinned this CID to avoid a "duplicate pin" error.
+        const pinned = await this.isPinned(cid)
         if (pinned) {
             return
         }
-        await this.ipfs.pin.remote.add(cid, {service, background: false})
+
+        // Ask the remote service to pin the content.
+        // Behind the scenes, this will cause the pinning service to connect to our local IPFS node
+        // and fetch the data using Bitswap, IPFS's transfer protocol.
+        await this.ipfs.pin.remote.add(cid, {
+            service: config.pinningService.name, 
+            background: false
+        })
     }
 
-    async isPinned(cid, service) {
-        for await (const result of this.ipfs.pin.remote.ls({cid: [cid], service})) {
+
+    /**
+     * Check if a cid is already pinned.
+     * @param {string} cid 
+     * @returns {Promise<boolean>} - true if the pinning service has already pinned the given cid
+     */
+    async isPinned(cid) {
+        const opts = {
+            service: config.pinningService.name,
+            cid: [cid], // ls expects an array of cids
+        }
+        for await (const result of this.ipfs.pin.remote.ls(opts)) {
             return true
         }
         return false
     }
 
+    /**
+     * Configure IPFS to use the remote pinning service from our config.
+     * @private
+     */
+    async _configurePinningService() {
+        if (!config.pinningService) {
+            throw new Error(`No pinningService set up in minty config. Unable to pin.`)
+        }
 
-    // ------ contract info
+        // check if the service has already been added to js-ipfs
+        for (const svc of await this.ipfs.pin.remote.service.ls()) {
+            if (svc.service === config.pinningService.name) {
+                // service is already configured, no need to do anything
+                return
+            }
+        }
 
-    get hardhat() {
-        return this.minter.hardhat
-    }
-
-    get contractAddress() {
-        return this.minter.contractAddress
+        // add the service to IPFS
+        const { name, endpoint, key } = config.pinningService
+        await this.ipfs.pin.remote.service.add(name, { endpoint, key })
     }
 }
 
-function cidFromURI(cidOrURI) {
+
+/**
+ * @param {string} cidOrURI either a CID string, or a URI string of the form `ipfs://${cid}`
+ * @returns the input string with the `ipfs://` prefix stripped off
+ */
+function stripIpfsUriPrefix(cidOrURI) {
     if (cidOrURI.startsWith('ipfs://')) {
         return cidOrURI.slice('ipfs://'.length)
     }
     return cidOrURI
 }
 
-async function MakeMinty(config = null) {
-    const m = new Minty(config)
+/**
+ * Construct and asynchronously initialize a new Minty instance.
+ * @returns {Promise<Minty>} a new instance of Minty, ready to mint NFTs.
+ */
+async function MakeMinty() {
+    const m = new Minty()
     await m.init()
     return m
 }

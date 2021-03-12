@@ -7,7 +7,7 @@ const fs = require('fs/promises')
 const {Command} = require('commander')
 const config = require('getconfig')
 const {MakeMinty} = require('./minty')
-const {deployContract} = require('./tokens')
+const {deployContract, saveDeploymentInfo} = require('./deploy')
 
 async function main() {
     const program = new Command()
@@ -66,12 +66,7 @@ async function pinNFTData(tokenId) {
 async function deploy(options) {
     const filename = options.output
     const info = await deployContract(options.name, options.symbol)
-    await saveDeployInfo(filename, info)
-}
-
-async function saveDeployInfo(filename, info) {
-    console.log(`Writing deployment info to ${filename}`)
-    return fs.writeFile(filename, JSON.stringify(info, null, 2))
+    await saveDeploymentInfo(info, filename)
 }
 
 
