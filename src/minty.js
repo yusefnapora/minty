@@ -1,4 +1,11 @@
-const {MakeAssetStorage} = require('./storage')
+const fs = require('fs/promises')
+const path = require('path')
+
+const IPFS = require('ipfs-core')
+const all = require('it-all')
+const uint8ArrayConcat = require('uint8arrays/concat')
+const uint8ArrayToString = require('uint8arrays/to-string')
+
 const {MakeTokenMinterWithConfigFile} = require('./tokens')
 
 const defaultConfig = {
@@ -16,7 +23,8 @@ const defaultConfig = {
 class Minty {
     constructor(config) {
         this.config = config || defaultConfig
-        this.storage = null
+        this.ipfs = undefined
+        this.pinningServices = []
         this.minter = null
         this._initialized = false
     }
@@ -30,52 +38,67 @@ class Minty {
         const {deploymentConfigFile} = this.config
         this.minter = await MakeTokenMinterWithConfigFile(deploymentConfigFile)
 
-        const pinningServices = this.config.pinningServices || []
-        this.storage = await MakeAssetStorage({pinningServices})
+        // create a local IPFS node
+        const silent = false // set to true to suppress IPFS log output
+        this.ipfs = await IPFS.create({silent})
+
+        // tell IPFS to use each configured pinning service
+        for (const svc of this.config.pinningServices) {
+            const {name, endpoint} = svc
+            let key = svc.accessToken
+            if (typeof svc.accessToken === 'function') {
+                key = svc.accessToken()
+            }
+
+            // FIXME: this will fail if the service has already been added. check if it exists first.
+            await this.ipfs.pin.remote.service.add(name, {endpoint, key})
+            this.pinningServices.push(name)
+        }
+
         this._initialized = true
     }
 
-    async createNFTFromImageFile(filePath, options) {
-        await this.init()
-        console.log(`creating a new NFT using image at ${filePath}`)
+    async createNFTFromAssetData(content, options) {
+        // add the asset to IPFS
+        const filePath = options.path || ''
+        const { cid: assetCid } = await this.ipfs.add({ path: path.basename(filePath), content })
 
-        const assetCid = await this.storage.addAsset(filePath)
-        console.log('asset CID: ', assetCid)
-
+        // make the NFT metadata JSON
         const metadata = await this.makeNFTMetadata(assetCid, options)
-        const metadataCid = await this.storage.addAsset('metadata.json', JSON.stringify(metadata))
-        console.log('metadata CID:', metadataCid)
 
+        // add the metadata to IPFS
+        const { cid: metadataCid } = await this.ipfs.add({ path: 'metadata.json', content: JSON.stringify(metadata)} )
+        
+        // get the address of the token owner from options, or use the default signing address if no owner is given
         let ownerAddress = options.owner
         if (!ownerAddress) {
             ownerAddress = await this.minter.defaultOwnerAddress()
         }
-        const tokenId = await this.mintToken(ownerAddress, metadataCid)
-        // console.log('token ID:', tokenId)
+
+        // mint a new token referencing the metadata CID
+        const tokenId = await this.minter.mintToken(ownerAddress, metadataCid)
+
         return {
-            assetCid,
-            metadataCid,
             tokenId,
             metadata,
+            assetCid,
+            metadataCid,
         }
     }
 
-    async makeNFTMetadata(assetCid, options) {
-        await this.init()
-        const {name, description} = options;
-        // TODO: input validation
+    async createNFTFromAssetFile(filePath, options) {
+        const content = await fs.readFile(filePath)
+        return this.createNFTFromAssetData(content, {...options, path: filePath})
+    }
 
+    async makeNFTMetadata(assetCid, options) {
+        const {name, description} = options;
         const assetURI = `ipfs://${assetCid}`
         return {
             name,
             description,
             image: assetURI
         }
-    }
-
-    async mintToken(ownerAddress, metadataCID) {
-        await this.init()
-        return this.minter.mintToken(ownerAddress, metadataCID)
     }
 
     /**
@@ -88,11 +111,8 @@ class Minty {
      * @returns {Promise<{metadata: ERC721Metadata, metadataURI: string}>}
      */
     async getNFTMetadata(tokenId) {
-        await this.init()
-
         const metadataURI = await this.minter.getTokenURI(tokenId)
-        const metadataJsonString = await this.storage.getString(metadataURI)
-        const metadata = JSON.parse(metadataJsonString)
+        const metadata = await this.getIPFSJSON(metadataURI)
 
         return {metadata, metadataURI}
     }
@@ -116,15 +136,13 @@ class Minty {
      * @returns {Promise<NFTInfo>}
      */
     async getNFT(tokenId, opts) {
-        await this.init()
-
         const {metadata, metadataURI} = await this.getNFTMetadata(tokenId)
         const ownerAddress = await this.minter.getTokenOwner(tokenId)
         const nft = {tokenId, metadata, metadataURI, ownerAddress}
 
         const {fetchAsset, fetchCreationInfo} = (opts || {})
         if (metadata.image && fetchAsset) {
-            nft.assetDataBase64 = await this.storage.getBase64String(metadata.image)
+            nft.assetDataBase64 = await this.getIPFSBase64(metadata.image)
         }
 
         if (fetchCreationInfo) {
@@ -132,6 +150,76 @@ class Minty {
         }
         return nft
     }
+
+
+    // --------- IPFS helpers
+
+    async getIPFS(cidOrURI) {
+        let cid = cidOrURI
+        if (cidOrURI.startsWith('ipfs://')) {
+            cid = cidOrURI.slice('ipfs://'.length)
+        }
+
+        return uint8ArrayConcat(await all(this.ipfs.cat(cid)))
+    }
+
+    async getIPFSString(cidOrURI) {
+        const bytes = await this.get(cidOrURI)
+        return uint8ArrayToString(bytes)
+    }
+
+    async getIPFSBase64(cidOrURI) {
+        const bytes = await this.get(cidOrURI)
+        return uint8ArrayToString(bytes, 'base64')
+    }
+
+    async getIPFSJSON(cidOrURI) {
+        const str = await this.getIPFSString(cidOrURI)
+        return JSON.parse(str)
+    }
+
+
+    // -------- pinning 
+
+    async pinCid(cid) {
+        if (this.pinningServices.length < 1) {
+            console.log('no pinning services configured, unable to pin ' + cid)
+            return
+        }
+
+
+        // pin to all services in parallel and await the result
+        const promises = []
+        for (const service of this.pinningServices) {
+            promises.push(this._pinIfUnpinned(cid, service))
+        }
+        try {
+            await Promise.all(promises)
+            console.log('pinned cid ', cid)
+        } catch (e) {
+            // TODO: propagate errors
+            console.error("Pinning error: ", e)
+        }
+    }
+
+    async _pinIfUnpinned(cid, service) {
+        const pinned = await this.isPinned(cid, service)
+        if (pinned) {
+            console.log(`cid ${cid} already pinned`)
+            return
+        }
+        await this.ipfs.pin.remote.add(cid, {service, background: false})
+    }
+
+    async isPinned(cid, service) {
+        for await (const result of this.ipfs.pin.remote.ls({cid: [cid], service})) {
+            return true
+        }
+        return false
+    }
+
+
+    // ------ contract info
 
     get hardhat() {
         return this.minter.hardhat

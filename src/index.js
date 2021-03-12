@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// This is the main entry point for the command line `minty` app.
+// See minty.js for the core functionality.
+
 const fs = require('fs/promises')
 const {Command} = require('commander')
 const {MakeMinty} = require('./minty')
@@ -25,6 +28,7 @@ async function main() {
 
     program.command('deploy')
         .description('deploy an instance of the Minty NFT contract')
+        .option('-o, --output <deploy-file-path>', 'Path to write deployment info to', 'minty-deployment.json')
         .option('-n, --name <name>', 'The name of the token contract', 'Julep')
         .option('-s, --symbol <symbol>', 'A short symbol for the tokens in this contract', 'JLP')
         .action(deploy)
@@ -35,17 +39,13 @@ async function main() {
 // ---- command action functions
 
 async function createNFT(imagePath, options) {
-
-    // TODO: pull global options out / read config file and pass opts to MakeMinty
     const minty = await MakeMinty()
 
-    const info = await minty.createNFTFromImageFile(imagePath, options)
+    const info = await minty.createNFTFromAssetFile(imagePath, options)
     console.log(`we did it! token info: `, info)
 }
 
 async function getNFT(tokenId, options) {
-
-    // TODO: pull global options out / read config file and pass opts to MakeMinty
     const minty = await MakeMinty()
 
     const fetchCreationInfo = options.creationInfo
@@ -56,8 +56,7 @@ async function getNFT(tokenId, options) {
 async function deploy(options) {
     const info = await deployContract(options.name, options.symbol)
 
-    // TODO: add option to control where to write deployment info
-    const filename = 'minty-deployment.json'
+    const filename = options.output
     console.log(`writing deployment info to ${filename}`)
     await saveDeployInfo(filename, info)
 }
