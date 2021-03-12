@@ -25,7 +25,7 @@
     "cids": "^1.1.6",
     "commander": "^7.1.0",
     "ipfs-core": "^0.5.2",
-    "js-ipfs-pinning-service-client": "github:yusefnapora/js-ipfs-pinning-service-client#master",
+    "it-all": "^1.0.5",
     "multiaddr": "^8.1.2"
   }
 }

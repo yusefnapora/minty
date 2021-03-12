@@ -55,7 +55,8 @@ class Minty {
         return {
             assetCid,
             metadataCid,
-            tokenId
+            tokenId,
+            metadata,
         }
     }
 
