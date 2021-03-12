@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-// This is the main entry point for the command line `minty` app.
+// This file contains the main entry point for the command line `minty` app, and the command line option parsing code.
 // See minty.js for the core functionality.
 
 const fs = require('fs/promises')
 const {Command} = require('commander')
+const config = require('getconfig')
 const {MakeMinty} = require('./minty')
 const {deployContract} = require('./tokens')
 
@@ -26,9 +27,13 @@ async function main() {
         .option('-c, --creation-info', 'include the creator address and block number the NFT was minted')
         .action(getNFT)
 
+    program.command('pin-nft <token-id>')
+        .description('"Pin" the data for an NFT to a remote IPFS Pinning Service')
+        .action(pinNFTData)
+
     program.command('deploy')
         .description('deploy an instance of the Minty NFT contract')
-        .option('-o, --output <deploy-file-path>', 'Path to write deployment info to', 'minty-deployment.json')
+        .option('-o, --output <deploy-file-path>', 'Path to write deployment info to', config.deploymentConfigFile || 'minty-deployment.json')
         .option('-n, --name <name>', 'The name of the token contract', 'Julep')
         .option('-s, --symbol <symbol>', 'A short symbol for the tokens in this contract', 'JLP')
         .action(deploy)
@@ -41,27 +46,31 @@ async function main() {
 async function createNFT(imagePath, options) {
     const minty = await MakeMinty()
 
-    const info = await minty.createNFTFromAssetFile(imagePath, options)
-    console.log(`we did it! token info: `, info)
+    const nft = await minty.createNFTFromAssetFile(imagePath, options)
+    console.log('Minted new NFT: ', nft)
 }
 
 async function getNFT(tokenId, options) {
+    const { creationInfo: fetchCreationInfo } = options
     const minty = await MakeMinty()
+    const nft = await minty.getNFT(tokenId, {fetchCreationInfo})
+    console.log(nft)
+}
 
-    const fetchCreationInfo = options.creationInfo
-    const info = await minty.getNFT(tokenId, {fetchCreationInfo})
-    console.log(info)
+async function pinNFTData(tokenId) {
+    const minty = await MakeMinty()
+    const {assetURI, metadataURI} = await minty.pinTokenData(tokenId)
+    console.log(`Pinned all data for token id ${tokenId}`)
 }
 
 async function deploy(options) {
-    const info = await deployContract(options.name, options.symbol)
-
     const filename = options.output
-    console.log(`writing deployment info to ${filename}`)
+    const info = await deployContract(options.name, options.symbol)
     await saveDeployInfo(filename, info)
 }
 
 async function saveDeployInfo(filename, info) {
+    console.log(`Writing deployment info to ${filename}`)
     return fs.writeFile(filename, JSON.stringify(info, null, 2))
 }
 

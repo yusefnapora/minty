@@ -1,28 +1,15 @@
 const fs = require('fs/promises')
 const path = require('path')
-
 const IPFS = require('ipfs-core')
 const all = require('it-all')
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayToString = require('uint8arrays/to-string')
+const config = require('getconfig')
 
-const {MakeTokenMinterWithConfigFile} = require('./tokens')
-
-const defaultConfig = {
-    pinningServices: [
-        {
-            name: "pinata",
-            endpoint: "https://api.pinata.cloud/psa",
-            accessToken: () => process.env['PINATA_API_TOKEN'],
-        }
-    ],
-
-    deploymentConfigFile: 'minty-deployment.json'
-}
+const { MakeTokenMinter } = require('./tokens')
 
 class Minty {
-    constructor(config) {
-        this.config = config || defaultConfig
+    constructor() {
         this.ipfs = undefined
         this.pinningServices = []
         this.minter = null
@@ -34,21 +21,16 @@ class Minty {
             return
         }
 
-        // TODO: error handling
-        const {deploymentConfigFile} = this.config
-        this.minter = await MakeTokenMinterWithConfigFile(deploymentConfigFile)
+        // create a new TokenMinter to deal with smart contract stuff (see tokens.js)
+        this.minter = await MakeTokenMinter()
 
         // create a local IPFS node
-        const silent = false // set to true to suppress IPFS log output
+        const silent = !config.showIPFSLogs
         this.ipfs = await IPFS.create({silent})
 
         // tell IPFS to use each configured pinning service
-        for (const svc of this.config.pinningServices) {
-            const {name, endpoint} = svc
-            let key = svc.accessToken
-            if (typeof svc.accessToken === 'function') {
-                key = svc.accessToken()
-            }
+        for (const svc of config.pinningServices) {
+            const {name, endpoint, accessToken: key} = svc
 
             // FIXME: this will fail if the service has already been added. check if it exists first.
             await this.ipfs.pin.remote.service.add(name, {endpoint, key})
@@ -155,21 +137,17 @@ class Minty {
     // --------- IPFS helpers
 
     async getIPFS(cidOrURI) {
-        let cid = cidOrURI
-        if (cidOrURI.startsWith('ipfs://')) {
-            cid = cidOrURI.slice('ipfs://'.length)
-        }
-
+        const cid = cidFromURI(cidOrURI)
         return uint8ArrayConcat(await all(this.ipfs.cat(cid)))
     }
 
     async getIPFSString(cidOrURI) {
-        const bytes = await this.get(cidOrURI)
+        const bytes = await this.getIPFS(cidOrURI)
         return uint8ArrayToString(bytes)
     }
 
     async getIPFSBase64(cidOrURI) {
-        const bytes = await this.get(cidOrURI)
+        const bytes = await this.getIPFS(cidOrURI)
         return uint8ArrayToString(bytes, 'base64')
     }
 
@@ -181,7 +159,21 @@ class Minty {
 
     // -------- pinning 
 
-    async pinCid(cid) {
+    async pinTokenData(tokenId) {
+        const {metadata, metadataURI} = await this.getNFTMetadata(tokenId)
+        const {image: assetURI} = metadata
+        
+        console.log(`Pinning asset data (${assetURI}) for token id ${tokenId}....`)
+        await this.pin(assetURI)
+        
+        console.log(`Pinning metadata (${metadataURI}) for token id ${tokenId}...`)
+        await this.pin(metadataURI)
+
+        return {assetURI, metadataURI}
+    }
+
+    async pin(cidOrURI) {
+        const cid = cidFromURI(cidOrURI)
         if (this.pinningServices.length < 1) {
             console.log('no pinning services configured, unable to pin ' + cid)
             return
@@ -195,7 +187,6 @@ class Minty {
         }
         try {
             await Promise.all(promises)
-            console.log('pinned cid ', cid)
         } catch (e) {
             // TODO: propagate errors
             console.error("Pinning error: ", e)
@@ -205,7 +196,6 @@ class Minty {
     async _pinIfUnpinned(cid, service) {
         const pinned = await this.isPinned(cid, service)
         if (pinned) {
-            console.log(`cid ${cid} already pinned`)
             return
         }
         await this.ipfs.pin.remote.add(cid, {service, background: false})
@@ -228,6 +218,13 @@ class Minty {
     get contractAddress() {
         return this.minter.contractAddress
     }
+}
+
+function cidFromURI(cidOrURI) {
+    if (cidOrURI.startsWith('ipfs://')) {
+        return cidOrURI.slice('ipfs://'.length)
+    }
+    return cidOrURI
 }
 
 async function MakeMinty(config = null) {

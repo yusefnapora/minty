@@ -1,26 +1,27 @@
-
+const fs = require('fs/promises')
 const {BigNumber} = require('ethers')
 const hardhat = require('hardhat')
+const config = require('getconfig')
 
 const CONTRACT_NAME = "Minty"
 
 class TokenMinter {
-    constructor(config) {
-        this._validateConfig(config)
+    constructor(deployInfo) {
+        this._validateDeployInfo(deployInfo)
 
-        this.config = config
+        this.deployInfo = deployInfo
         this.contract = null
         this._initialized = false
     }
 
-    _validateConfig(config) {
-        const {contract} = config
+    _validateDeployInfo(deployInfo) {
+        const {contract} = deployInfo
         if (!contract) {
-            throw new Error('required config option "contract" not found')
+            throw new Error('required field "contract" not found in deploy info')
         }
         const required = arg => {
-            if (!config.contract.hasOwnProperty(arg)) {
-                throw new Error(`required config option "contract.${arg}" not found`)
+            if (!deployInfo.contract.hasOwnProperty(arg)) {
+                throw new Error(`required field "contract.${arg}" not found in deploy info`)
             }
         }
 
@@ -34,7 +35,7 @@ class TokenMinter {
             return
         }
 
-        const {abi, address} = this.config.contract
+        const {abi, address} = this.deployInfo.contract
         this.contract = await hardhat.ethers.getContractAt(abi, address)
         // console.log(`minter connected to contract at address ${address} (network: ${hardhat.network.name})`)
         this._initialized = true
@@ -102,9 +103,25 @@ class TokenMinter {
     }
 
     get contractAddress() {
-        return this.config.contract.address
+        return this.deployInfo.contract.address
     }
 }
+
+async function MakeTokenMinter(deployInfo = undefined) {
+    if (!deployInfo) {
+        let {deploymentConfigFile} = config
+        if (!deploymentConfigFile) {
+            console.log('no deploymentConfigFile field found in minty config. attempting to read from default path "./minty-deployment.json"')
+            deploymentConfigFile = 'minty-deployment.json'
+        }
+        const content = await fs.readFile(deploymentConfigFile, {encoding: 'utf8'})
+        deployInfo = JSON.parse(content)
+    }
+    const minter = new TokenMinter(deployInfo)
+    await minter.init()
+    return minter
+}
+
 
 async function deployContract(name, symbol) {
     const network = hardhat.network.name
@@ -131,23 +148,7 @@ function deploymentInfo(hardhat, minty) {
     }
 }
 
-
-
-async function MakeTokenMinter(config) {
-    const minter = new TokenMinter(config)
-    await minter.init()
-    return minter
-}
-
-async function MakeTokenMinterWithConfigFile(filename) {
-    const fs = require('fs/promises')
-    const content = await fs.readFile(filename, {encoding: 'utf8'})
-    const config = JSON.parse(content)
-    return MakeTokenMinter(config)
-}
-
 module.exports = {
     deployContract,
     MakeTokenMinter,
-    MakeTokenMinterWithConfigFile,
 }

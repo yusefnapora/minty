@@ -24,6 +24,7 @@
     "@openzeppelin/contracts": "^3.4.1",
     "cids": "^1.1.6",
     "commander": "^7.1.0",
+    "getconfig": "^4.5.0",
     "ipfs-core": "https://gitpkg.now.sh/yusefnapora/js-ipfs/packages/ipfs-core?feat%2Fremote-pin-api",
     "it-all": "^1.0.5",
     "multiaddr": "^8.1.2"
