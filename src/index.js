@@ -81,6 +81,7 @@ async function deploy(options) {
     await saveDeploymentInfo(info, filename)
 }
 
+// ---- helpers
 
 async function promptForMissing(cliOptions, prompts) {
     const questions = []

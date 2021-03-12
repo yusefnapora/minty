@@ -4,19 +4,41 @@ const IPFS = require('ipfs-core')
 const all = require('it-all')
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayToString = require('uint8arrays/to-string')
-const config = require('getconfig')
 const hardhat = require('hardhat')
+const {BigNumber} = require('ethers')
 
 
 const { loadDeploymentInfo } = require('./deploy')
 
+// The getconfig package loads configuration from files located in the the `config` directory.
+// See https://www.npmjs.com/package/getconfig for info on how to override the default config for
+// different environments (e.g. testnet, mainnet, staging, production, etc).
+const config = require('getconfig')
+
+
 /**
- * Minty is the main object 
+ * Construct and asynchronously initialize a new Minty instance.
+ * @returns {Promise<Minty>} a new instance of Minty, ready to mint NFTs.
+ */
+ async function MakeMinty() {
+    const m = new Minty()
+    await m.init()
+    return m
+}
+
+/**
+ * Minty is the main object responsible for storing NFT data and interacting with the smart contract.
+ * Before constructing, make sure that the contract has been deployed and a deployment
+ * info file exists (the default location is `minty-deployment.json`)
+ * 
+ * Minty requires async initialization, so the Minty class (and its constructor) are not exported. 
+ * To make one, use the async {@link MakeMinty} function.
  */
 class Minty {
     constructor() {
-        this.ipfs = undefined
-        this.pinningServices = []
+        this.ipfs = null
+        this.contract = null
+        this.deployInfo = null
         this._initialized = false
     }
 
@@ -24,8 +46,7 @@ class Minty {
         if (this._initialized) {
             return
         }
-
-        // the Minty object expects that the contract has already been deployed, with
+        // The Minty object expects that the contract has already been deployed, with
         // details written to a deployment info file. The default location is `./minty-deployment.json`,
         // in the config.
         this.deployInfo = await loadDeploymentInfo()
@@ -41,8 +62,29 @@ class Minty {
         this._initialized = true
     }
 
+    //////////////////////////////////////////////
     // ------ NFT Creation
+    //////////////////////////////////////////////
 
+    /**
+     * Create a new NFT from the given asset data.
+     * 
+     * @param {Buffer|Uint8Array} content - a Buffer or UInt8Array of data (e.g. for an image)
+     * @param {object} options
+     * @param {?string} path - optional file path to set when storing the data on IPFS
+     * @param {?string} name - optional name to set in NFT metadata
+     * @param {?string} description - optional description to store in NFT metadata
+     * @param {?string} owner - optional ethereum address that should own the new NFT. 
+     * If missing, the default signing address will be used.
+     * 
+     * @typedef {object} CreateNFTResult
+     * @property {string} tokenId - the unique ID of the new token
+     * @property {object} metadata - the JSON metadata stored in IPFS and referenced by the token's metadata URI
+     * @property {string} metadataCid - the IPFS content ID (CID) of the NFT metadata
+     * @property {string} assetCid - the IPFS content ID (CID) of the NFT asset
+     * 
+     * @returns {Promise<CreateNFTResult>}
+     */
     async createNFTFromAssetData(content, options) {
         // add the asset to IPFS
         const filePath = options.path || ''
@@ -71,11 +113,31 @@ class Minty {
         }
     }
 
-    async createNFTFromAssetFile(filePath, options) {
-        const content = await fs.readFile(filePath)
-        return this.createNFTFromAssetData(content, {...options, path: filePath})
+    /**
+     * Create a new NFT from an asset file at the given path.
+     * 
+     * @param {string} filename - the path to an image file or other asset to use
+     * @param {object} options
+     * @param {?string} name - optional name to set in NFT metadata
+     * @param {?string} description - optional description to store in NFT metadata
+     * @param {?string} owner - optional ethereum address that should own the new NFT. 
+     * If missing, the default signing address will be used.
+     * 
+     * @returns {Promise<CreateNFTResult>}
+     */
+    async createNFTFromAssetFile(filename, options) {
+        const content = await fs.readFile(filename)
+        return this.createNFTFromAssetData(content, {...options, path: filename})
     }
 
+    /**
+     * Helper to construct metadata JSON for 
+     * @param {string} assetCid - IPFS content ID (CID) for the NFT asset
+     * @param {object} options
+     * @param {?string} name - optional name to set in NFT metadata
+     * @param {?string} description - optional description to store in NFT metadata
+     * @returns {object} - NFT metadata object
+     */
     async makeNFTMetadata(assetCid, options) {
         const {name, description} = options;
         const assetURI = `ipfs://${assetCid}`
@@ -86,41 +148,31 @@ class Minty {
         }
     }
 
-
+    //////////////////////////////////////////////
     // -------- NFT Retreival
+    //////////////////////////////////////////////
 
     /**
-     * @typedef {object} ERC721Metadata
-     * @property {?string} name
-     * @property {?string} description
-     * @property {string} image
+     * Get information about an existing token. 
+     * By default, this includes the token id, owner address, metadata, and metadata URI.
+     * To include info about when the token was created and by whom, set `opts.fetchCreationInfo` to true.
+     * To include the full asset data (base64 encoded), set `opts.fetchAsset` to true.
      *
-     * @param tokenId
-     * @returns {Promise<{metadata: ERC721Metadata, metadataURI: string}>}
-     */
-    async getNFTMetadata(tokenId) {
-        const metadataURI = await this.getTokenURI(tokenId)
-        const metadata = await this.getIPFSJSON(metadataURI)
-
-        return {metadata, metadataURI}
-    }
-
-    /**
-     *
+     * @param {string} tokenId
+     * @param {object} opts
+     * @param {?boolean} opts.fetchAsset - if true, asset data will be fetched from IPFS and returned in assetData (base64 encoded)
+     * @param {?boolean} opts.fetchCreationInfo - if true, fetch historical info (creator address and block number)
+     * 
+     * 
      * @typedef {object} NFTInfo
      * @property {string} tokenId
      * @property {string} ownerAddress
-     * @property {ERC721Metadata} metadata
+     * @property {object} metadata
      * @property {string} metadataURI
      * @property {?string} assetDataBase64
      * @property {?object} creationInfo
      * @property {string} creationInfo.creatorAddress
      * @property {number} creationInfo.blockNumber
-     *
-     * @param {string} tokenId
-     * @param {object} opts
-     * @param {?boolean} opts.fetchAsset - if true, asset data will be fetched from IPFS and returned in assetData
-     * @param {?boolean} opts.fetchCreationInfo - if true, fetch historical info (creator address and block number)
      * @returns {Promise<NFTInfo>}
      */
     async getNFT(tokenId, opts) {
@@ -139,14 +191,32 @@ class Minty {
         return nft
     }
 
+    /**
+     * Fetch the NFT metadata for a given token id.
+     * 
+     * @param tokenId - the id of an existing token
+     * @returns {Promise<{metadata: object, metadataURI: string}>} - resolves to an object containing the metadata and
+     * metadata URI. Fails if the token does not exist, or if fetching the data fails.
+     */
+    async getNFTMetadata(tokenId) {
+        const metadataURI = await this.getTokenURI(tokenId)
+        const metadata = await this.getIPFSJSON(metadataURI)
 
+        return {metadata, metadataURI}
+    }
+
+    //////////////////////////////////////////////
     // --------- Smart contract interactions
+    //////////////////////////////////////////////
 
+    /**
+     * Create a new NFT token that references the given metadata CID, owned by the given address.
+     * 
+     * @param {string} ownerAddress - the ethereum address that should own the new token
+     * @param {string} metadataCID - IPFS content ID (CID) for the NFT metadata that should be associated with this token
+     * @returns {Promise<string>} - the ID of the new token
+     */
     async mintToken(ownerAddress, metadataCID) {
-        await this.init()
-
-        console.log('minting new token for metadata CID: ', metadataCID)
-
         // Call the mintToken method to issue a new token to the given address
         // This returns a transaction object, but the transaction hasn't been confirmed
         // yet, so it doesn't have our token id.
@@ -167,26 +237,47 @@ class Minty {
         throw new Error('unable to get token id')
     }
 
+    /**
+     * @returns {Promise<string>} - the default signing address that should own new tokens, if no owner was specified.
+     */
     async defaultOwnerAddress() {
         const signers = await hardhat.ethers.getSigners()
         return signers[0].address
     }
 
+    /**
+     * Get the metadata URI associated with the given token ID.
+     * @param {*} tokenId - the id of an existing token
+     * @returns {Promise<string>} - the metadata URI for the token. Fails if no token with the given id exists.
+     */
     async getTokenURI(tokenId) {
-        await this.init()
         const result = await this.contract.tokenURI(BigNumber.from(tokenId))
         // console.log(`found URI for token ${tokenId}: ${result}`)
         return result
     }
 
+    /**
+     * Get the address that owns the given token id.
+     * 
+     * @param {string} tokenId - the id of an existing token
+     * @returns {Promise<string>} - the ethereum address of the token owner. Fails if no token with the given id exists.
+     */
     async getTokenOwner(tokenId) {
-        await this.init()
         return this.contract.ownerOf(tokenId)
     }
 
+    /**
+     * Get historical information about the token.
+     * 
+     * @param {string} tokenId - the id of an existing token
+     * 
+     * @typedef {object} NFTCreationInfo
+     * @property {number} blockNumber - the block height at which the token was minted
+     * @property {string} creatorAddress - the ethereum address of the token's initial owner
+     * 
+     * @returns {Promise<NFTCreationInfo>}
+     */
     async getCreationInfo(tokenId) {
-        await this.init()
-
         const filter = await this.contract.filters.Transfer(
             null,
             null,
@@ -202,36 +293,64 @@ class Minty {
         }
     }
 
+    //////////////////////////////////////////////
     // --------- IPFS helpers
+    //////////////////////////////////////////////
 
+    /**
+     * Get the full contents of the IPFS object identified by the given CID or URI.
+     * 
+     * @param {string} cidOrURI - IPFS CID string or `ipfs://<cid>` style URI
+     * @returns {Promise<Uint8Array>} - contents of the IPFS object
+     */
     async getIPFS(cidOrURI) {
         const cid = stripIpfsUriPrefix(cidOrURI)
         return uint8ArrayConcat(await all(this.ipfs.cat(cid)))
     }
 
+    /**
+     * Get the contents of the IPFS object identified by the given CID or URI, and return it as a string.
+     * 
+     * @param {string} cidOrURI - IPFS CID string or `ipfs://<cid>` style URI
+     * @returns {Promise<string>} - the contents of the IPFS object as a string
+     */
     async getIPFSString(cidOrURI) {
         const bytes = await this.getIPFS(cidOrURI)
         return uint8ArrayToString(bytes)
     }
 
+    /**
+     * Get the full contents of the IPFS object identified by the given CID or URI, and return it as a base64 encoded string.
+     * 
+     * @param {string} cidOrURI - IPFS CID string or `ipfs://<cid>` style URI
+     * @returns {Promise<string>} - contents of the IPFS object, encoded to base64
+     */
     async getIPFSBase64(cidOrURI) {
         const bytes = await this.getIPFS(cidOrURI)
         return uint8ArrayToString(bytes, 'base64')
     }
 
+    /**
+     * Get the contents of the IPFS object identified by the given CID or URI, and parse it as JSON, returning the parsed object.
+     *  
+     * @param {string} cidOrURI - IPFS CID string or `ipfs://<cid>` style URI
+     * @returns {Promise<string>} - contents of the IPFS object, as a javascript object (or array, etc depending on what was stored). Fails if the content isn't valid JSON.
+     */
     async getIPFSJSON(cidOrURI) {
         const str = await this.getIPFSString(cidOrURI)
         return JSON.parse(str)
     }
 
-
+    //////////////////////////////////////////////
     // -------- Pinning to remote services
+    //////////////////////////////////////////////
 
     /**
      * Pins all IPFS data associated with the given tokend id to the remote pinning service.
-     * @param {*} tokenId - the ID of an NFT that was previously minted.
+     * 
+     * @param {string} tokenId - the ID of an NFT that was previously minted.
      * @returns {Promise<{assetURI: string, metadataURI: string}>} - the IPFS asset and metadata uris that were pinned.
-     * @throws if no token with the given id exists, or if pinning fails.
+     * Fails if no token with the given id exists, or if pinning fails.
      */
     async pinTokenData(tokenId) {
         const {metadata, metadataURI} = await this.getNFTMetadata(tokenId)
@@ -248,6 +367,7 @@ class Minty {
 
     /**
      * Request that the remote pinning service pin the given CID or ipfs URI.
+     * 
      * @param {string} cidOrURI - a CID or ipfs:// URI
      * @returns {Promise<void>}
      */
@@ -275,6 +395,7 @@ class Minty {
 
     /**
      * Check if a cid is already pinned.
+     * 
      * @param {string} cid 
      * @returns {Promise<boolean>} - true if the pinning service has already pinned the given cid
      */
@@ -291,6 +412,7 @@ class Minty {
 
     /**
      * Configure IPFS to use the remote pinning service from our config.
+     * 
      * @private
      */
     async _configurePinningService() {
@@ -308,6 +430,17 @@ class Minty {
 
         // add the service to IPFS
         const { name, endpoint, key } = config.pinningService
+        if (!name) {
+            throw new Error('No name configured for pinning service')
+        }
+        if (!endpoint) {
+            throw new Error(`No endpoint configured for pinning service ${name}`)
+        }
+        if (!key) {
+            throw new Error(`No key configured for pinning service ${name}.` +
+              `If the config references an environment variable, e.g. '$$PINATA_API_TOKEN', ` + 
+              `make sure that the variable is defined.`)
+        }
         await this.ipfs.pin.remote.service.add(name, { endpoint, key })
     }
 }
@@ -317,21 +450,11 @@ class Minty {
  * @param {string} cidOrURI either a CID string, or a URI string of the form `ipfs://${cid}`
  * @returns the input string with the `ipfs://` prefix stripped off
  */
-function stripIpfsUriPrefix(cidOrURI) {
+ function stripIpfsUriPrefix(cidOrURI) {
     if (cidOrURI.startsWith('ipfs://')) {
         return cidOrURI.slice('ipfs://'.length)
     }
     return cidOrURI
-}
-
-/**
- * Construct and asynchronously initialize a new Minty instance.
- * @returns {Promise<Minty>} a new instance of Minty, ready to mint NFTs.
- */
-async function MakeMinty() {
-    const m = new Minty()
-    await m.init()
-    return m
 }
 
 module.exports = {
