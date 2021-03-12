@@ -15,21 +15,21 @@ async function main() {
 
     // commands
     program
-        .command('create-nft <image-path>')
-        .description('Create a new NFT from an image file')
+        .command('mint <image-path>')
+        .description('create a new NFT from an image file')
         .option('-n, --name <name>', 'The name of the NFT')
         .option('-d, --description <desc>', 'A description of the NFT')
         .option('-o, --owner <address>', 'The ethereum address that should own the NFT.' +
             'If not provided, defaults to the first signing address.')
         .action(createNFT)
 
-    program.command('get-nft <token-id>')
-        .description('Get info about an NFT using its token ID')
+    program.command('show <token-id>')
+        .description('get info about an NFT using its token ID')
         .option('-c, --creation-info', 'include the creator address and block number the NFT was minted')
         .action(getNFT)
 
-    program.command('pin-nft <token-id>')
-        .description('"Pin" the data for an NFT to a remote IPFS Pinning Service')
+    program.command('pin <token-id>')
+        .description('"pin" the data for an NFT to a remote IPFS Pinning Service')
         .action(pinNFTData)
 
     program.command('deploy')
