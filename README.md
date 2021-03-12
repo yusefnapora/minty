@@ -97,8 +97,8 @@ Minted new NFT:  {
     description: 'Some long description',
     image: 'ipfs://QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ'
   },
-  assetCid: CID(QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ),
-  metadataCid: CID(QmUJibEFFTNEbvof9AroJK8m4HBUz427FTX8ejW2FoZpzn)
+  assetURI: 'ipfs://QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ',
+  metadataURI: 'ipfs://QmUJibEFFTNEbvof9AroJK8m4HBUz427FTX8ejW2FoZpzn'
 }
 ```
 

@@ -80,8 +80,8 @@ class Minty {
      * @typedef {object} CreateNFTResult
      * @property {string} tokenId - the unique ID of the new token
      * @property {object} metadata - the JSON metadata stored in IPFS and referenced by the token's metadata URI
-     * @property {string} metadataCid - the IPFS content ID (CID) of the NFT metadata
-     * @property {string} assetCid - the IPFS content ID (CID) of the NFT asset
+     * @property {string} metadataURI - an ipfs:// URI for the NFT metadata
+     * @property {string} assetURI - an ipfs:// URI for the NFT asset
      * 
      * @returns {Promise<CreateNFTResult>}
      */
@@ -104,12 +104,13 @@ class Minty {
 
         // mint a new token referencing the metadata CID
         const tokenId = await this.mintToken(ownerAddress, metadataCid)
-
+        const assetURI = ensureIpfsUriPrefix(assetCid)
+        const metadataURI = ensureIpfsUriPrefix(metadataCid)
         return {
             tokenId,
             metadata,
-            assetCid,
-            metadataCid,
+            assetURI,
+            metadataURI,
         }
     }
 
@@ -455,6 +456,13 @@ class Minty {
         return cidOrURI.slice('ipfs://'.length)
     }
     return cidOrURI
+}
+
+function ensureIpfsUriPrefix(cidOrURI) {
+    if (!cidOrURI.toString().startsWith('ipfs://')) {
+        return 'ipfs://' + cidOrURI
+    }
+    return cidOrURI.toString()
 }
 
 module.exports = {
