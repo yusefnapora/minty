@@ -77,9 +77,9 @@ When the contract is deployed, the address and other information about the deplo
 by default called `minty-deployment.json`. This file must be present for subsequent commands to work.
 
 To deploy to an ethereum testnet, see the [Hardhat configuration docs](https://hardhat.org/config/) to learn
-how to configure a JSON-RPC node. To use a different network, either change the `defaultNetwork` field in 
-`hardhat.config.js`, or set the `HARDHAT_NETWORK` environment variable to the name of a network that's been
-defined in the hardhat config.
+how to configure a JSON-RPC node. Once you've added a new network to the Hardhat config, you can use it by 
+setting the `HARDHAT_NETWORK` environment variable to the name of the new network when you run `minty` commands. 
+Alternatively, you can change the `defaultNetwork` in `hardhat.config.js` to always prefer the new network.
 
 In theory, you could deploy to mainnet as well, but that would probably be a bad idea, as the Minty smart
 contract lacks important things like [access control](https://docs.openzeppelin.com/contracts/3.x/access-control)
