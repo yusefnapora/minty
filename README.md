@@ -73,7 +73,7 @@ minty deploy
 
 This will deploy to the network configured in [`hardhat.config.js`](./hardhat.config.js), which by default
 is the `localhost` network. If you get an error about not being able to reach the network, make sure to
-run the local development network with `./start-devnet.sh`.
+run the local development network with `./start-local-environment.sh`.
 
 When the contract is deployed, the address and other information about the deployment is written to a JSON file,
 by default called `minty-deployment.json`. This file must be present for subsequent commands to work.
