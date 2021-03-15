@@ -19,10 +19,15 @@ git clone https://github.com/yusefnapora/minty
 cd minty
 ```
 
-Install NPM dependencies and add the `minty` command to your path:
+Install NPM dependencies:
 
 ```shell
 npm install
+```
+
+And add the `minty` command to your `$PATH`:
+
+```
 npm link
 ```
 
