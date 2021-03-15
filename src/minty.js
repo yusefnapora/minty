@@ -88,30 +88,42 @@ class Minty {
      */
     async createNFTFromAssetData(content, options) {
         // add the asset to IPFS
-        const filePath = options.path || ''
-        const { cid: assetCid } = await this.ipfs.add({ path: path.basename(filePath), content })
+        const filePath = options.path || 'asset.bin'
+        const basename =  path.basename(filePath)
+
+        // When you add an object to IPFS with a directory prefix in its path,
+        // IPFS will create a directory structure for you. This is nice, because
+        // it gives us URIs with descriptive filenames in them e.g.
+        // 'ipfs://QmaNZ2FCgvBPqnxtkbToVVbK2Nes6xk5K4Ns6BsmkPucAM/cat-pic.png' instead of
+        // 'ipfs://QmaNZ2FCgvBPqnxtkbToVVbK2Nes6xk5K4Ns6BsmkPucAM'
+        const ipfsPath = '/nft/' + basename
+        const { cid: assetCid } = await this.ipfs.add({ path: ipfsPath, content })
 
         // make the NFT metadata JSON
-        const metadata = await this.makeNFTMetadata(assetCid, options)
+        const assetURI = ensureIpfsUriPrefix(assetCid) + '/' + basename
+        const metadata = await this.makeNFTMetadata(assetURI, options)
 
         // add the metadata to IPFS
-        const { cid: metadataCid } = await this.ipfs.add({ path: 'metadata.json', content: JSON.stringify(metadata)} )
-        
+        const { cid: metadataCid } = await this.ipfs.add({ path: '/nft/metadata.json', content: JSON.stringify(metadata)} )
+        const metadataURI = ensureIpfsUriPrefix(metadataCid) + '/metadata.json'
+
         // get the address of the token owner from options, or use the default signing address if no owner is given
         let ownerAddress = options.owner
         if (!ownerAddress) {
             ownerAddress = await this.defaultOwnerAddress()
         }
 
-        // mint a new token referencing the metadata CID
-        const tokenId = await this.mintToken(ownerAddress, metadataCid)
-        const assetURI = ensureIpfsUriPrefix(assetCid)
-        const metadataURI = ensureIpfsUriPrefix(metadataCid)
+        // mint a new token referencing the metadata URI
+        const tokenId = await this.mintToken(ownerAddress, metadataURI)
+
+        // format and return the results
         return {
             tokenId,
             metadata,
             assetURI,
             metadataURI,
+            assetGatewayURL: makeGatewayURL(assetURI),
+            metadataGatewayURL: makeGatewayURL(metadataURI),
         }
     }
 
@@ -134,15 +146,15 @@ class Minty {
 
     /**
      * Helper to construct metadata JSON for 
-     * @param {string} assetCid - IPFS content ID (CID) for the NFT asset
+     * @param {string} assetCid - IPFS URI for the NFT asset
      * @param {object} options
      * @param {?string} name - optional name to set in NFT metadata
      * @param {?string} description - optional description to store in NFT metadata
      * @returns {object} - NFT metadata object
      */
-    async makeNFTMetadata(assetCid, options) {
+    async makeNFTMetadata(assetURI, options) {
         const {name, description} = options;
-        const assetURI = `ipfs://${assetCid}`
+        assetURI = ensureIpfsUriPrefix(assetURI)
         return {
             name,
             description,
@@ -180,11 +192,16 @@ class Minty {
     async getNFT(tokenId, opts) {
         const {metadata, metadataURI} = await this.getNFTMetadata(tokenId)
         const ownerAddress = await this.getTokenOwner(tokenId)
-        const nft = {tokenId, metadata, metadataURI, ownerAddress}
+        const metadataGatewayURL = makeGatewayURL(metadataURI)
+        const nft = {tokenId, metadata, metadataURI, metadataGatewayURL, ownerAddress}
 
         const {fetchAsset, fetchCreationInfo} = (opts || {})
-        if (metadata.image && fetchAsset) {
-            nft.assetDataBase64 = await this.getIPFSBase64(metadata.image)
+        if (metadata.image) {
+            nft.assetURI = metadata.image
+            nft.assetGatewayURI = makeGatewayURL(metadata.image)
+            if (fetchAsset) {
+                nft.assetDataBase64 = await this.getIPFSBase64(metadata.image)
+            }
         }
 
         if (fetchCreationInfo) {
@@ -202,6 +219,8 @@ class Minty {
      */
     async getNFTMetadata(tokenId) {
         const metadataURI = await this.getTokenURI(tokenId)
+
+        console.log('metadata uri: ', metadataURI)
         const metadata = await this.getIPFSJSON(metadataURI)
 
         return {metadata, metadataURI}
@@ -215,14 +234,17 @@ class Minty {
      * Create a new NFT token that references the given metadata CID, owned by the given address.
      * 
      * @param {string} ownerAddress - the ethereum address that should own the new token
-     * @param {string} metadataCID - IPFS content ID (CID) for the NFT metadata that should be associated with this token
+     * @param {string} metadataURI - IPFS URI for the NFT metadata that should be associated with this token
      * @returns {Promise<string>} - the ID of the new token
      */
-    async mintToken(ownerAddress, metadataCID) {
+    async mintToken(ownerAddress, metadataURI) {
+        // the smart contract adds an ipfs:// prefix to all URIs, so make sure it doesn't get added twice
+        metadataURI = stripIpfsUriPrefix(metadataURI)
+
         // Call the mintToken method to issue a new token to the given address
         // This returns a transaction object, but the transaction hasn't been confirmed
         // yet, so it doesn't have our token id.
-        const tx = await this.contract.mintToken(ownerAddress, metadataCID.toString())
+        const tx = await this.contract.mintToken(ownerAddress, metadataURI)
 
         // The OpenZeppelin base ERC721 contract emits a Transfer event when a token is issued.
         // tx.wait() will wait until a block containing our transaction has been mined and confirmed.
@@ -410,11 +432,14 @@ class Minty {
     /**
      * Check if a cid is already pinned.
      * 
-     * @param {string} cid 
+     * @param {string|CID} cid 
      * @returns {Promise<boolean>} - true if the pinning service has already pinned the given cid
      */
     async isPinned(cid) {
-        
+        if (typeof cid === 'string') {
+            cid = new CID(cid)
+        }
+
         const opts = {
             service: config.pinningService.name,
             cid: [cid], // ls expects an array of cids
@@ -477,6 +502,10 @@ function ensureIpfsUriPrefix(cidOrURI) {
         return 'ipfs://' + cidOrURI
     }
     return cidOrURI.toString()
+}
+
+function makeGatewayURL(ipfsURI) {
+    return config.ipfsGatewayUrl + '/' + stripIpfsUriPrefix(ipfsURI)
 }
 
 module.exports = {

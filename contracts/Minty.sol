@@ -13,7 +13,7 @@ contract Minty is ERC721 {
         _setBaseURI("ipfs://");
     }
 
-    function mintToken(address owner, string memory metadataCID)
+    function mintToken(address owner, string memory metadataURI)
     public
     returns (uint256)
     {
@@ -21,7 +21,7 @@ contract Minty is ERC721 {
 
         uint256 id = _tokenIds.current();
         _safeMint(owner, id);
-        _setTokenURI(id, metadataCID);
+        _setTokenURI(id, metadataURI);
 
         return id;
     }
