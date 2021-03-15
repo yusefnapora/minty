@@ -127,8 +127,8 @@ minty show 1
 
 ### Pin IPFS assets for an NFT
 
-The assets for new tokens are stored in a local IPFS repository, which is only "online" temporarily while
-running `minty` commands.
+The assets for new tokens are stored in a local IPFS repository, which is only "online" while a local IPFS daemon is running.
+The `start-local-environment.sh` script starts a local daemon for you, in case you're not already running IPFS.
 
 To make the data highly available without needing to run a local IPFS daemon 24/7, you can request that a [Remote Pinning Service][pinning-service-api] like [Pinata](https://pinata.cloud) store a copy of your IPFS data on their IPFS nodes.
 
@@ -143,15 +143,6 @@ Pinning asset data (ipfs://QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ) for t
 Pinning metadata (ipfs://QmUJibEFFTNEbvof9AroJK8m4HBUz427FTX8ejW2FoZpzn) for token id 1...
 Pinned all data for token id 1
 ```
-
-Instead of or in addition to pinning data remotely, you can make the data available when `minty` is not running by installing `js-ipfs` globally, and running the IPFS daemon:
-
-```shell
-npm install -g ipfs
-js-ipfs daemon
-```
-
-This will use the same local repository as Minty, and will provide your data to the IPFS network as long as your computer is online.
 
 [pinning-service-api]: https://ipfs.github.io/pinning-services-api-spec/
 
