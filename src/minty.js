@@ -407,7 +407,8 @@ class Minty {
      * @returns {Promise<void>}
      */
     async pin(cidOrURI) {
-        const cid = new CID(stripIpfsUriPrefix(cidOrURI))
+        let cidString = stripIpfsUriPrefix(cidOrURI).split('/')[0]
+        let cid = new CID(cidString)
 
         // Make sure IPFS is set up to use our preferred pinning service.
         await this._configurePinningService()
