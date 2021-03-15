@@ -14,8 +14,8 @@ const config = {
     // Commands that interact with the smart contract (minting, etc), will load the file to connect to the deployed contract.
     deploymentConfigFile: 'minty-deployment.json',
 
-    // Set this to true to log the IPFS listen addresses when running minty commands
-    showIPFSLogs: false,
+    // If you're running IPFS on a non-default port, update this URL. If you're using the IPFS defaults, you should be all set.
+    ipfsApiUrl: 'http://localhost:5001',
 }
 
 module.exports = config

@@ -1,6 +1,6 @@
 const fs = require('fs/promises')
 const path = require('path')
-const IPFS = require('ipfs-core')
+const ipfsClient = require('ipfs-http-client')
 const all = require('it-all')
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayToString = require('uint8arrays/to-string')
@@ -56,8 +56,7 @@ class Minty {
         this.contract = await hardhat.ethers.getContractAt(abi, address)
 
         // create a local IPFS node
-        const silent = !config.showIPFSLogs
-        this.ipfs = await IPFS.create({silent})
+        this.ipfs = ipfsClient(config.ipfsApiUrl)
 
         this._initialized = true
     }
@@ -218,6 +217,7 @@ class Minty {
      * @returns {Promise<string>} - the ID of the new token
      */
     async mintToken(ownerAddress, metadataCID) {
+        console.log('minting token for metadata cid', metadataCID)
         // Call the mintToken method to issue a new token to the given address
         // This returns a transaction object, but the transaction hasn't been confirmed
         // yet, so it doesn't have our token id.
@@ -236,6 +236,18 @@ class Minty {
         }
 
         throw new Error('unable to get token id')
+    }
+
+    async transferToken(tokenId, toAddress) {
+        const fromAddress = await this.getTokenOwner(tokenId)
+
+        // because the base ERC721 contract has two overloaded versions of the safeTranferFrom function,
+        // we need to refer to it by its fully qualified name.
+        const tranferFn = this.contract['safeTransferFrom(address,address,uint256)']
+        const tx = await tranferFn(fromAddress, toAddress, tokenId)
+
+        // wait for the transaction to be finalized
+        await tx.wait()
     }
 
     /**

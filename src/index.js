@@ -28,6 +28,11 @@ async function main() {
         .option('-c, --creation-info', 'include the creator address and block number the NFT was minted')
         .action(getNFT)
 
+
+    program.command('transfer <token-id> <to-address>')
+        .description('transfer an NFT to a new owner')
+        .action(transferNFT)
+
     program.command('pin <token-id>')
         .description('"pin" the data for an NFT to a remote IPFS Pinning Service')
         .action(pinNFTData)
@@ -67,6 +72,13 @@ async function getNFT(tokenId, options) {
     const minty = await MakeMinty()
     const nft = await minty.getNFT(tokenId, {fetchCreationInfo})
     console.log(nft)
+}
+
+async function transferNFT(tokenId, toAddress) {
+    const minty = await MakeMinty()
+
+    await minty.transferToken(tokenId, toAddress)
+    console.log(`Transferred token ${tokenId} to ${toAddress}`)
 }
 
 async function pinNFTData(tokenId) {
