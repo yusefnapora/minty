@@ -4,6 +4,7 @@
 // See minty.js for the core functionality.
 
 const fs = require('fs/promises')
+const path = require('path')
 const {Command} = require('commander')
 const inquirer = require('inquirer')
 const config = require('getconfig')
@@ -43,6 +44,13 @@ async function main() {
         .option('-n, --name <name>', 'The name of the token contract', 'Julep')
         .option('-s, --symbol <symbol>', 'A short symbol for the tokens in this contract', 'JLP')
         .action(deploy)
+
+
+    // The hardhat and getconfig modules both expect to be running from the root directory of the project,
+    // so we change the current directory to the parent dir of this script file to make things work
+    // even if you call minty from elsewhere
+    const rootDir = path.join(__dirname, '..')
+    process.chdir(rootDir)
 
     await program.parseAsync(process.argv)
 }

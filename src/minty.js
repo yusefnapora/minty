@@ -6,7 +6,6 @@ const ipfsClient = require('ipfs-http-client')
 const all = require('it-all')
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayToString = require('uint8arrays/to-string')
-const hardhat = require('hardhat')
 const {BigNumber} = require('ethers')
 
 
@@ -48,6 +47,8 @@ class Minty {
         if (this._initialized) {
             return
         }
+        this.hardhat = require('hardhat')
+
         // The Minty object expects that the contract has already been deployed, with
         // details written to a deployment info file. The default location is `./minty-deployment.json`,
         // in the config.
@@ -55,7 +56,7 @@ class Minty {
 
         // connect to the smart contract using the address and ABI from the deploy info
         const {abi, address} = this.deployInfo.contract
-        this.contract = await hardhat.ethers.getContractAt(abi, address)
+        this.contract = await this.hardhat.ethers.getContractAt(abi, address)
 
         // create a local IPFS node
         this.ipfs = ipfsClient(config.ipfsApiUrl)
@@ -275,7 +276,7 @@ class Minty {
      * @returns {Promise<string>} - the default signing address that should own new tokens, if no owner was specified.
      */
     async defaultOwnerAddress() {
-        const signers = await hardhat.ethers.getSigners()
+        const signers = await this.hardhat.ethers.getSigners()
         return signers[0].address
     }
 

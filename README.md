@@ -42,10 +42,8 @@ the right contract.
 
 ## Usage
 
-Currently the `minty` command must be run from inside the root directory of this repository, since it will try to
-read some configuration files at launch.
-
-Run `minty --help` to see usage instructions.
+Run `minty help` to see full usage instructions, and / or `minty help <command>` to see help for a specific command,
+e.g. `minty help mint`.
 
 ### Configuration
 

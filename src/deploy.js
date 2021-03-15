@@ -3,12 +3,12 @@ const {F_OK} = require('fs')
 
 const inquirer = require('inquirer')
 const {BigNumber} = require('ethers')
-const hardhat = require('hardhat')
 const config = require('getconfig')
 
 const CONTRACT_NAME = "Minty"
 
 async function deployContract(name, symbol) {
+    const hardhat = require('hardhat')
     const network = hardhat.network.name
 
     console.log(`deploying contract for token ${name} (${symbol}) to network "${network}"...`)
