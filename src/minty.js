@@ -219,8 +219,6 @@ class Minty {
      */
     async getNFTMetadata(tokenId) {
         const metadataURI = await this.getTokenURI(tokenId)
-
-        console.log('metadata uri: ', metadataURI)
         const metadata = await this.getIPFSJSON(metadataURI)
 
         return {metadata, metadataURI}
