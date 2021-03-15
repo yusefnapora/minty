@@ -198,7 +198,7 @@ class Minty {
         const {fetchAsset, fetchCreationInfo} = (opts || {})
         if (metadata.image) {
             nft.assetURI = metadata.image
-            nft.assetGatewayURI = makeGatewayURL(metadata.image)
+            nft.assetGatewayURL = makeGatewayURL(metadata.image)
             if (fetchAsset) {
                 nft.assetDataBase64 = await this.getIPFSBase64(metadata.image)
             }
