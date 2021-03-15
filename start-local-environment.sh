@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-echo "compiling smart contract"
+echo "Compiling smart contract"
 npx hardhat compile
 if [ $? -ne 0 ]; then
   echo "compilation error"
   exit 1
 fi
 
-echo "running IPFS and development blockchain"
+echo "Running IPFS and development blockchain"
 run_eth_cmd="npx hardhat node"
 run_ipfs_cmd="npx go-ipfs daemon"
 

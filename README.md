@@ -26,12 +26,12 @@ npm install
 npm link
 ```
 
-Run a local ethereum devnet:
+Run the `start-local-environment.sh` script to run a local Ethereum devnet and start IPFS:
 ```shell
-./start-devnet.sh
+./start-local-environment.sh
 ```
 
-With the devnet running in another terminal, deploy the smart contract:
+With the local environment scrip running in another terminal, deploy the smart contract:
 ```shell
 minty deploy
 ```
@@ -51,7 +51,11 @@ Run `minty --help` to see usage instructions.
 
 Some configuration is stored in [`./config/default.js`](./config/default.js).
 
-The most important bit is the `pinningService` configuration, which is used by the `minty pin` command to persist
+The `start-local-devnet.sh` script will try to run a local IPFS daemon, which Minty will connect to on its default port.
+If you've already installed IPFS and configured it to use a non-standard API port, you may need to
+change the `ipfsApiUrl` field to set the correct API address.
+
+The `pinningService` configuration option is used by the `minty pin` command to persist
 IPFS data to a remote pinning service.
 
 The default configuration is setup to pin data to [Pinata](https://pinata.cloud), and it expects a Pinata JWT

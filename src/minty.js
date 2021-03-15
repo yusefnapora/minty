@@ -1,5 +1,7 @@
 const fs = require('fs/promises')
 const path = require('path')
+
+const CID = require('cids')
 const ipfsClient = require('ipfs-http-client')
 const all = require('it-all')
 const uint8ArrayConcat = require('uint8arrays/concat')
@@ -217,7 +219,6 @@ class Minty {
      * @returns {Promise<string>} - the ID of the new token
      */
     async mintToken(ownerAddress, metadataCID) {
-        console.log('minting token for metadata cid', metadataCID)
         // Call the mintToken method to issue a new token to the given address
         // This returns a transaction object, but the transaction hasn't been confirmed
         // yet, so it doesn't have our token id.
@@ -385,7 +386,7 @@ class Minty {
      * @returns {Promise<void>}
      */
     async pin(cidOrURI) {
-        const cid = stripIpfsUriPrefix(cidOrURI)
+        const cid = new CID(stripIpfsUriPrefix(cidOrURI))
 
         // Make sure IPFS is set up to use our preferred pinning service.
         await this._configurePinningService()
@@ -413,6 +414,7 @@ class Minty {
      * @returns {Promise<boolean>} - true if the pinning service has already pinned the given cid
      */
     async isPinned(cid) {
+        
         const opts = {
             service: config.pinningService.name,
             cid: [cid], // ls expects an array of cids
