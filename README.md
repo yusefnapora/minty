@@ -36,7 +36,7 @@ Run the `start-local-environment.sh` script to run a local Ethereum devnet and s
 ./start-local-environment.sh
 ```
 
-With the local environment scrip running in another terminal, deploy the smart contract:
+With the local environment script running in another terminal, deploy the smart contract:
 ```shell
 minty deploy
 ```
