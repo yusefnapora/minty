@@ -407,8 +407,7 @@ class Minty {
      * @returns {Promise<void>}
      */
     async pin(cidOrURI) {
-        let cidString = stripIpfsUriPrefix(cidOrURI).split('/')[0]
-        let cid = new CID(cidString)
+        const cid = extractCID(cidOrURI)
 
         // Make sure IPFS is set up to use our preferred pinning service.
         await this._configurePinningService()
@@ -485,6 +484,9 @@ class Minty {
     }
 }
 
+//////////////////////////////////////////////
+// -------- URI helpers
+//////////////////////////////////////////////
 
 /**
  * @param {string} cidOrURI either a CID string, or a URI string of the form `ipfs://${cid}`
@@ -504,9 +506,30 @@ function ensureIpfsUriPrefix(cidOrURI) {
     return cidOrURI.toString()
 }
 
+/**
+ * Return an HTTP gateway URL for the given IPFS object.
+ * @param {string} ipfsURI - an ipfs:// uri or CID string
+ * @returns - an HTTP url to view the IPFS object on the configured gateway.
+ */
 function makeGatewayURL(ipfsURI) {
     return config.ipfsGatewayUrl + '/' + stripIpfsUriPrefix(ipfsURI)
 }
+
+/**
+ * 
+ * @param {string} cidOrURI - an ipfs:// URI or CID string
+ * @returns {CID} a CID for the root of the IPFS path
+ */
+function extractCID(cidOrURI) {
+    // remove the ipfs:// prefix, split on '/' and return first path component (root CID)
+    const cidString = stripIpfsUriPrefix(cidOrURI).split('/')[0]
+    return new CID(cidString)
+}
+
+
+//////////////////////////////////////////////
+// -------- Exports
+//////////////////////////////////////////////
 
 module.exports = {
     MakeMinty,
