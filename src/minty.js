@@ -219,7 +219,7 @@ class Minty {
      * metadata URI. Fails if the token does not exist, or if fetching the data fails.
      */
     async getNFTMetadata(tokenId) {
-        const metadataURI = await this.getTokenURI(tokenId)
+        const metadataURI = await this.contract.tokenURI(tokenId)
         const metadata = await this.getIPFSJSON(metadataURI)
 
         return {metadata, metadataURI}
@@ -278,17 +278,6 @@ class Minty {
     async defaultOwnerAddress() {
         const signers = await this.hardhat.ethers.getSigners()
         return signers[0].address
-    }
-
-    /**
-     * Get the metadata URI associated with the given token ID.
-     * @param {*} tokenId - the id of an existing token
-     * @returns {Promise<string>} - the metadata URI for the token. Fails if no token with the given id exists.
-     */
-    async getTokenURI(tokenId) {
-        const result = await this.contract.tokenURI(BigNumber.from(tokenId))
-        // console.log(`found URI for token ${tokenId}: ${result}`)
-        return result
     }
 
     /**
