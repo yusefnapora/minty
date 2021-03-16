@@ -7,9 +7,19 @@ const fs = require('fs/promises')
 const path = require('path')
 const {Command} = require('commander')
 const inquirer = require('inquirer')
+const chalk = require('chalk')
+const colorize = require('json-colorizer')
 const config = require('getconfig')
 const {MakeMinty} = require('./minty')
 const {deployContract, saveDeploymentInfo} = require('./deploy')
+
+const colorizeOptions = {
+    pretty: true,
+    colors: {
+        STRING_KEY: 'blue.bold',
+        STRING_LITERAL: 'green'
+    }
+}
 
 async function main() {
     const program = new Command()
@@ -72,27 +82,53 @@ async function createNFT(imagePath, options) {
     })
 
     const nft = await minty.createNFTFromAssetFile(imagePath, answers)
-    console.log('Minted new NFT: ', nft)
+    console.log('🌿 Minted a new NFT: ')
+
+    alignOutput([
+        ['Token ID:', chalk.green(nft.tokenId)],
+        ['Metadata URI:', chalk.blue(nft.metadataURI)],
+        ['Metadata Gateway URL:', chalk.blue(nft.metadataGatewayURL)],
+        ['Asset URI:', chalk.blue(nft.assetURI)],
+        ['Asset Gateway URL:', chalk.blue(nft.assetGatewayURL)],
+    ])
+    console.log('NFT Metadata:')
+    console.log(colorize(JSON.stringify(nft.metadata), colorizeOptions))
 }
 
 async function getNFT(tokenId, options) {
     const { creationInfo: fetchCreationInfo } = options
     const minty = await MakeMinty()
     const nft = await minty.getNFT(tokenId, {fetchCreationInfo})
-    console.log(nft)
+
+    const output = [
+        ['Token ID:', chalk.green(nft.tokenId)],
+        ['Owner Address:', chalk.yellow(nft.ownerAddress)],
+    ]
+    if (nft.creationInfo) {
+        output.push(['Creator Address:', chalk.yellow(nft.creationInfo.creatorAddress)])
+        output.push(['Block Number:', nft.creationInfo.blockNumber])
+    }
+    output.push(['Metadata URI:', chalk.blue(nft.metadataURI)])
+    output.push(['Metadata Gateway URL:', chalk.blue(nft.metadataGatewayURL)])
+    output.push(['Asset URI:', chalk.blue(nft.assetURI)])
+    output.push(['Asset Gateway URL:', chalk.blue(nft.assetGatewayURL)])
+    alignOutput(output)
+
+    console.log('NFT Metadata:')
+    console.log(colorize(JSON.stringify(nft.metadata), colorizeOptions))
 }
 
 async function transferNFT(tokenId, toAddress) {
     const minty = await MakeMinty()
 
     await minty.transferToken(tokenId, toAddress)
-    console.log(`Transferred token ${tokenId} to ${toAddress}`)
+    console.log(`🌿 Transferred token ${chalk.green(tokenId)} to ${chalk.yellow(toAddress)}`)
 }
 
 async function pinNFTData(tokenId) {
     const minty = await MakeMinty()
     const {assetURI, metadataURI} = await minty.pinTokenData(tokenId)
-    console.log(`Pinned all data for token id ${tokenId}`)
+    console.log(`🌿 Pinned all data for token id ${chalk.green(tokenId)}`)
 }
 
 async function deploy(options) {
@@ -117,6 +153,15 @@ async function promptForMissing(cliOptions, prompts) {
         questions.push(prompt)
     }
     return inquirer.prompt(questions)
+}
+
+function alignOutput(labelValuePairs) {
+    const maxLabelLength = labelValuePairs
+      .map(([l, _]) => l.length)
+      .reduce((len, max) => len > max ? len : max)
+    for (const [label, value] of labelValuePairs) {
+        console.log(label.padEnd(maxLabelLength+1), value)
+    }
 }
 
 // ---- main entry point when running as a script

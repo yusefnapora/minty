@@ -81,9 +81,12 @@ class Minty {
      * 
      * @typedef {object} CreateNFTResult
      * @property {string} tokenId - the unique ID of the new token
+     * @property {string} ownerAddress - the ethereum address of the new token's owner
      * @property {object} metadata - the JSON metadata stored in IPFS and referenced by the token's metadata URI
      * @property {string} metadataURI - an ipfs:// URI for the NFT metadata
+     * @property {string} metadataGatewayURL - an HTTP gateway URL for the NFT metadata
      * @property {string} assetURI - an ipfs:// URI for the NFT asset
+     * @property {string} assetGatewayURL - an HTTP gateway URL for the NFT asset
      * 
      * @returns {Promise<CreateNFTResult>}
      */
@@ -120,6 +123,7 @@ class Minty {
         // format and return the results
         return {
             tokenId,
+            ownerAddress,
             metadata,
             assetURI,
             metadataURI,
@@ -184,6 +188,9 @@ class Minty {
      * @property {string} ownerAddress
      * @property {object} metadata
      * @property {string} metadataURI
+     * @property {string} metadataGatewayURI
+     * @property {string} assetURI
+     * @property {string} assetGatewayURL
      * @property {?string} assetDataBase64
      * @property {?object} creationInfo
      * @property {string} creationInfo.creatorAddress
