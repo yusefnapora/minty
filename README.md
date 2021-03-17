@@ -132,7 +132,7 @@ minty mint ~/flight-to-the-moon.txt --name "Moon Flight #1" --description "This 
 > NFT Metadata:
 > {
 >   "name": "Moon Flight #1",
->   "description": "This ticket serves are proof-of-owndership of a first-class seat on a flight to the moon.",
+>   "description": "This ticket serves are proof-of-ownership of a first-class seat on a flight to the moon.",
 >   "image": "ipfs://QmbwYvCrjnv9nKqagwYoniNzppf96za7BnateWD18mQnHX/flight-to-the-moon.txt"
 > }
 ```
