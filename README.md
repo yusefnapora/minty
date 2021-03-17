@@ -108,72 +108,52 @@ The terminal window running the `./start-local-environment.sh` will output somet
 > eth_getTransactionReceipt
 ```
 
-This deploys to the network configured in [`hardhat.config.js`](./hardhat.config.js), which is the `localhost` network by default. If you get an error about not being able to reach the network, make sure to run the local development network with `./start-local-environment.sh`.
+This deploys to the network configured in [`hardhat.config.js`](./hardhat.config.js), which is set to the `localhost` network by default. If you get an error about not being able to reach the network, make sure to run the local development network with `./start-local-environment.sh`.
 
-When the contract is deployed, the address and other information about the deployment is written to a JSON file, by default called `minty-deployment.json`. This file must be present for subsequent commands to work.
+When the contract is deployed, the address and other information about the deployment is written to `minty-deployment.json`. This file must be present for subsequent commands to work.
 
 To deploy to an ethereum testnet, see the [Hardhat configuration docs](https://hardhat.org/config/) to learn how to configure a JSON-RPC node. Once you've added a new network to the Hardhat config, you can use it by setting the `HARDHAT_NETWORK` environment variable to the name of the new network when you run `minty` commands. Alternatively, you can change the `defaultNetwork` in `hardhat.config.js` to always prefer the new network.
 
-Since the Minty smart contract lacks [access control](https://docs.openzeppelin.com/contracts/3.x/access-control) deploying this contract to a mainnet is a bad idea.
+Deploying this contract to the Ethereum mainnet is a bad idea since the contract itself lacks any access control. See the [Open Zeppelin article](https://docs.openzeppelin.com/contracts/3.x/access-control) about what access control is, and why it's important to have.
 
 ### Mint a new NFT
 
-```shell
-minty mint ~/pics/my-nice-pic.jpeg --name "A very nice picture" --description "Some long description"
-```
+Once you have the local Ethereum network and IPFS daemon running, minting an NFT it increaibly simple. Just specify what you want to _tokenize_, the name of the NFT, and a description to tell users what the NFT is for:
 
-```
-Minted new NFT:  {
-  tokenId: '1',
-  metadata: {
-    name: 'A very nice picture',
-    description: 'Some long description',
-    image: 'ipfs://QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ'
-  },
-  assetURI: 'ipfs://QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ',
-  metadataURI: 'ipfs://QmUJibEFFTNEbvof9AroJK8m4HBUz427FTX8ejW2FoZpzn'
-}
+```shell
+minty mint ~/flight-to-the-moon.txt --name "Moon Flight #1" --description "This ticket serves as proof-of-ownership of a first-class seat on a flight to the moon."
+
+> 🌿 Minted a new NFT:
+> Token ID:              1
+> Metadata URI:          ipfs://Qma4RRDu9Q5ZXb4F6HSPAHXeyinYYFuBMTrk7HbHrsbcN9/metadata.json
+> Metadata Gateway URL:  http://localhost:8080/ipfs/Qma4RRDu9Q5ZXb4F6HSPAHXeyinYYFuBMTrk7HbHrsbcN9/metadata.json
+> Asset URI:             ipfs://QmbwYvCrjnv9nKqagwYoniNzppf96za7BnateWD18mQnHX/flight-to-the-moon.txt
+> Asset Gateway URL:     http://localhost:8080/ipfs/QmbwYvCrjnv9nKqagwYoniNzppf96za7BnateWD18mQnHX/flight-to-the-moon.txt
+> NFT Metadata:
+> {
+>   "name": "Moon Flight #1",
+>   "description": "This ticket serves are proof-of-owndership of a first-class seat on a flight to the moon.",
+>   "image": "ipfs://QmbwYvCrjnv9nKqagwYoniNzppf96za7BnateWD18mQnHX/flight-to-the-moon.txt"
+> }
 ```
 
 ### Show details of an existing NFT
 
+You can view the details of each individual NFL by calling `show` along with the ID of the NFT:
+
 ```shell
 minty show 1
-```
 
-```
-{
-  tokenId: '1',
-  metadata: {
-    name: 'A very nice picture',
-    description: 'Some long description',
-    image: 'ipfs://QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ'
-  },
-  metadataURI: 'ipfs://QmUJibEFFTNEbvof9AroJK8m4HBUz427FTX8ejW2FoZpzn',
-  ownerAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-}
+> Token ID:              1
+> Owner Address:         0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+> Metadata URI:          ipfs://Qma4RRDu9Q5ZXb4F6HSPAHXeyinYYFuBMTrk7HbHrsbcN9/metadata.json
+> ...
 ```
 
 ### Pin IPFS assets for an NFT
 
-The assets for new tokens are stored in a local IPFS repository, which is only "online" while a local IPFS daemon is running.
-The `start-local-environment.sh` script starts a local daemon for you, in case you're not already running IPFS.
+The assets for new tokens are stored in a local IPFS repository which is only _online_ while a local IPFS daemon is running. The `start-local-environment.sh` script starts a local daemon for you if you aren't already running and IPFS daemon. If you are, then the script just uses the daemon you already have.
 
-To make the data highly available without needing to run a local IPFS daemon 24/7, you can request that a [Remote Pinning Service][pinning-service-api] like [Pinata](https://pinata.cloud) store a copy of your IPFS data on their IPFS nodes.
+To make the data highly available without needing to run a local IPFS daemon 24/7, you can request that a [Remote Pinning Service][https://ipfs.github.io/pinning-services-api-spec] like [Pinata][https://pinata.cloud/] store a copy of your IPFS data on their IPFS nodes.
 
-See the [configuration section](#configuration) above for details on setting up the pinning service credentials.
 
-```shell
-minty pin 1
-```
-
-```
-Pinning asset data (ipfs://QmSH4rRhdfNRsisZR5kbK7zAqRb14cpWADRBP3tEjBf3mQ) for token id 1....
-Pinning metadata (ipfs://QmUJibEFFTNEbvof9AroJK8m4HBUz427FTX8ejW2FoZpzn) for token id 1...
-Pinned all data for token id 1
-```
-
-[pinning-service-api]: https://ipfs.github.io/pinning-services-api-spec/
-
-<!-- TODO: add tutorial link -->
-[minty-tutorial]: http://example.com/fixme
