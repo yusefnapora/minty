@@ -1,63 +1,11 @@
 # minty
 
-> A minimal NFT minting platform with IPFS integration.
-
-`minty` is an example of how to "mint" Non-Fungible Tokens, or NFTs, while storing the
-data associated with each token on IPFS.
-
-To persist the IPFS data and make it highly available,
-`minty` uses the [IPFS Pinning Service API][pinning-service-api] to request that 
-a remote pinning service keep a copy online.
-
-See [the companion tutorial][minty-tutorial] for more details.
-
-## Set up
-
-1. Clone this repository and enter it:
-
-    ```shell
-    git clone https://github.com/yusefnapora/minty
-    cd minty
-    ```
-
-1. Install NPM dependencies:
-
-    ```shell
-    npm install
-    ```
-
-1. Add the `minty` command to your `$PATH`:
-
-    ```
-    npm link
-    ```
-
-1. Run the `start-local-environment.sh` script to run a local Ethereum devnet and start IPFS:
-
-    ```shell
-    ./start-local-environment.sh
-
-    > Compiling smart contract
-    > Compiling 16 files with 0.7.3
-    > ...
-    ```
-
-    This command continues to run. All further commands need to be entered in another terminal window.
-
-1. Deploy the smart contract:
-
-    ```shell
-    minty deploy
-
-    > ...
-    > [ipfs] Daemon is ready
-    ```
-
-The contract address and other info is written to `minty-deployment.json`. This file will be used by future `minty` commands to find the right contract.
+Minty is an example of how to _mint_ non-fungible tokens (NFSs) while storing the
+associated data on IPFS. You can also use Minty to pin your data on an IPFS pinning service such as Pinata.
 
 ## Usage
 
-Run `minty help` to see full usage instructions, and `minty help <command>` to see help for a specific command: 
+Run `minty help` to see full usage instructions or `minty help <command>` for help on a specific command: 
 
 ```shell
 minty help mint
@@ -72,20 +20,42 @@ minty help mint
 >   -h, --help                display help for command
 ```
 
-### Configuration
+## Setup 
 
-Configuration are stored in [`./config/default.js`](./config/default.js).
+To install and run Minty, you must have NPM installed. Windows is not currently supported.
 
-The `start-local-devnet.sh` script will try to run a local IPFS daemon, which Minty will connect to on its default port. If you've already installed IPFS and configured it to use a non-standard API port, you may need to change the `ipfsApiUrl` field to set the correct API address.
+1. Clone this repository and move into the `minty` directory:
 
-The `pinningService` configuration option is used by the `minty pin` command to persist
-IPFS data to a remote pinning service.
+    ```shell
+    git clone https://github.com/yusefnapora/minty
+    cd minty
+    ```
 
-The default configuration is setup to pin data to [Pinata](https://pinata.cloud), and it expects a Pinata JWT access token to be set to the `PINATA_API_TOKEN` environment variable.
+1. Install the NPM dependencies:
 
-If you don't have an API token, either get a free one or configure a different pinning service. With no pinning service, everything apart from the `minty pin` command should still work.
+    ```shell
+    npm install
+    ```
 
-### Deploy the smart contract
+1. Add the `minty` command to your `$PATH`. This makes it easier to run Minty from anywhere on your computer:
+
+    ```
+    npm link
+    ```
+
+1. Run the `start-local-environment.sh` script to start the local Ethereum testnet and IPFS daemon:
+
+    ```shell
+    ./start-local-environment.sh
+
+    > Compiling smart contract
+    > Compiling 16 files with 0.7.3
+    > ...
+    ```
+
+    This command continues to run. All further commands must be entered in another terminal window.
+
+## Deploy the contract
 
 Before running any of the other `minty` commands, you'll need to deploy an instance of the
 smart contract:
@@ -115,6 +85,19 @@ When the contract is deployed, the address and other information about the deplo
 To deploy to an ethereum testnet, see the [Hardhat configuration docs](https://hardhat.org/config/) to learn how to configure a JSON-RPC node. Once you've added a new network to the Hardhat config, you can use it by setting the `HARDHAT_NETWORK` environment variable to the name of the new network when you run `minty` commands. Alternatively, you can change the `defaultNetwork` in `hardhat.config.js` to always prefer the new network.
 
 Deploying this contract to the Ethereum mainnet is a bad idea since the contract itself lacks any access control. See the [Open Zeppelin article](https://docs.openzeppelin.com/contracts/3.x/access-control) about what access control is, and why it's important to have.
+
+## Configuration
+
+Configuration are stored in [`./config/default.js`](./config/default.js).
+
+The `start-local-devnet.sh` script will try to run a local IPFS daemon, which Minty will connect to on its default port. If you've already installed IPFS and configured it to use a non-standard API port, you may need to change the `ipfsApiUrl` field to set the correct API address.
+
+The `pinningService` configuration option is used by the `minty pin` command to persist
+IPFS data to a remote pinning service.
+
+The default configuration is setup to pin data to [Pinata](https://pinata.cloud), and it expects a Pinata JWT access token to be set to the `PINATA_API_TOKEN` environment variable.
+
+If you don't have an API token, either get a free one or configure a different pinning service. With no pinning service, everything apart from the `minty pin` command should still work.
 
 ### Mint a new NFT
 
