@@ -7,6 +7,11 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# if there's no local ipfs repo, initialize one
+if [ ! -d "~/.ipfs" ]; then
+  npx go-ipfs init
+fi
+
 echo "Running IPFS and development blockchain"
 run_eth_cmd="npx hardhat node"
 run_ipfs_cmd="npx go-ipfs daemon"
