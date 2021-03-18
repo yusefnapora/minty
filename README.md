@@ -101,7 +101,7 @@ If you don't have an API token, either get a free one or configure a different p
 
 ### Mint a new NFT
 
-Once you have the local Ethereum network and IPFS daemon running, minting an NFT it increaibly simple. Just specify what you want to _tokenize_, the name of the NFT, and a description to tell users what the NFT is for:
+Once you have the local Ethereum network and IPFS daemon running, minting an NFT is incredibly simple. Just specify what you want to _tokenize_, the name of the NFT, and a description to tell users what the NFT is for:
 
 ```shell
 minty mint ~/flight-to-the-moon.txt --name "Moon Flight #1" --description "This ticket serves as proof-of-ownership of a first-class seat on a flight to the moon."
