@@ -122,7 +122,7 @@ minty mint ~/flight-to-the-moon.txt --name "Moon Flight #1" --description "This 
 
 ### Show details of an existing NFT
 
-You can view the details of each individual NFL by calling `show` along with the ID of the NFT:
+You can view the details of each individual NFT by calling `show` along with the ID of the NFT:
 
 ```shell
 minty show 1
