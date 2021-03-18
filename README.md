@@ -137,6 +137,22 @@ minty show 1
 
 The assets for new tokens are stored in a local IPFS repository which is only _online_ while a local IPFS daemon is running. The `start-local-environment.sh` script starts a local daemon for you if you aren't already running and IPFS daemon. If you are, then the script just uses the daemon you already have.
 
-To make the data highly available without needing to run a local IPFS daemon 24/7, you can request that a [Remote Pinning Service][https://ipfs.github.io/pinning-services-api-spec] like [Pinata][https://pinata.cloud/] store a copy of your IPFS data on their IPFS nodes.
+To make the data highly available without needing to run a local IPFS daemon 24/7, you can request that a [Remote Pinning Service](https://ipfs.github.io/pinning-services-api-spec) like [Pinata](https://pinata.cloud/) store a copy of your IPFS data on their IPFS nodes.
 
+To pin the data for token, use the `minty pin` command:
 
+```shell
+minty pin 1
+
+> Pinning asset data (ipfs://QmUAACALRufqXnGHM1QCSr5JA3b54N5QBKD73EXx6pws2f/ipfs-logo.png) for token id 1....
+> Pinning metadata (ipfs://QmR6YQJX9woK2SzmzFJ1T4q1bMinbQrWaSQdcxcJmgKuDY/metadata.json) for token id 1...
+> 🌿 Pinned all data for token id 1
+```
+
+The `pin` command looks for a JWT access token from [Pinata](https://pinata.cloud) in the `PINATA_API_TOKEN` environment variable. Once you've obtained a token from Pinata, you can set it with a command like:
+
+```shell
+export PINATA_API_TOKEN="paste token here"
+```
+
+If you'd prefer to use a different pinning service, you can edit the configuration in `config/default.js`.
