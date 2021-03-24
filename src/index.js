@@ -86,9 +86,9 @@ async function createNFT(imagePath, options) {
 
     alignOutput([
         ['Token ID:', chalk.green(nft.tokenId)],
-        ['Metadata URI:', chalk.blue(nft.metadataURI)],
+        ['Metadata Address:', chalk.blue(nft.metadataURI)],
         ['Metadata Gateway URL:', chalk.blue(nft.metadataGatewayURL)],
-        ['Asset URI:', chalk.blue(nft.assetURI)],
+        ['Asset Address:', chalk.blue(nft.assetURI)],
         ['Asset Gateway URL:', chalk.blue(nft.assetGatewayURL)],
     ])
     console.log('NFT Metadata:')
@@ -108,9 +108,9 @@ async function getNFT(tokenId, options) {
         output.push(['Creator Address:', chalk.yellow(nft.creationInfo.creatorAddress)])
         output.push(['Block Number:', nft.creationInfo.blockNumber])
     }
-    output.push(['Metadata URI:', chalk.blue(nft.metadataURI)])
+    output.push(['Metadata Address:', chalk.blue(nft.metadataURI)])
     output.push(['Metadata Gateway URL:', chalk.blue(nft.metadataGatewayURL)])
-    output.push(['Asset URI:', chalk.blue(nft.assetURI)])
+    output.push(['Asset Address:', chalk.blue(nft.assetURI)])
     output.push(['Asset Gateway URL:', chalk.blue(nft.assetGatewayURL)])
     alignOutput(output)
 

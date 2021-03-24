@@ -90,7 +90,7 @@ Deploying this contract to the Ethereum mainnet is a bad idea since the contract
 
 Configuration are stored in [`./config/default.js`](./config/default.js).
 
-The `start-local-devnet.sh` script will try to run a local IPFS daemon, which Minty will connect to on its default port. If you've already installed IPFS and configured it to use a non-standard API port, you may need to change the `ipfsApiUrl` field to set the correct API address.
+The `./start-local-environment.sh` script will try to run a local IPFS daemon, which Minty will connect to on its default port. If you've already installed IPFS and configured it to use a non-standard API port, you may need to change the `ipfsApiUrl` field to set the correct API address.
 
 The `pinningService` configuration option is used by the `minty pin` command to persist
 IPFS data to a remote pinning service.
