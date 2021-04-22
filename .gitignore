@@ -2,6 +2,7 @@
 node_modules
 minty-deployment.json
 config/default.env
+.env
 
 #Hardhat files
 cache

@@ -1,13 +1,13 @@
 const config = {
 
     // The pinningService config tells minty what remote pinning service to use for pinning the IPFS data for a token.
-    // The default config uses Pinata (https://pinata.cloud), and expects a JWT access token in the PINATA_API_TOKEN
-    // environment variable.
-    // 
+    // The values are read in from environment variables, to discourage checking credentials into source control.
+    // You can make things easy by creating a .env file with your environment variable definitions. See the example files
+    // pinata.env.example and nft.storage.env.example in this directory for templates you can use to get up and running.
     pinningService: {
-        name: 'pinata',
-        endpoint: 'https://api.pinata.cloud/psa',
-        key: '$$PINATA_API_TOKEN'
+        name: '$$PINNING_SERVICE_NAME',
+        endpoint: '$$PINNING_SERVICE_ENDPOINT',
+        key: '$$PINNING_SERVICE_KEY'
     },
 
     // When the Minty smart contract is deployed, the contract address and other details will be written to this file.
