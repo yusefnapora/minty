@@ -1,7 +1,7 @@
 # minty
 
 Minty is an example of how to _mint_ non-fungible tokens (NFTs) while storing the
-associated data on IPFS. You can also use Minty to pin your data on an IPFS pinning service such as Pinata.
+associated data on IPFS. You can also use Minty to pin your data on an IPFS pinning service such as [nft.storage](https://nft.storage) and [Pinata](https://pinata.cloud).
 
 ## Usage
 
@@ -92,12 +92,25 @@ Configuration are stored in [`./config/default.js`](./config/default.js).
 
 The `./start-local-environment.sh` script will try to run a local IPFS daemon, which Minty will connect to on its default port. If you've already installed IPFS and configured it to use a non-standard API port, you may need to change the `ipfsApiUrl` field to set the correct API address.
 
-The `pinningService` configuration option is used by the `minty pin` command to persist
-IPFS data to a remote pinning service.
+The `pinningService` configuration option is used by the `minty pin` command to persist IPFS data to a remote pinning service.
 
-The default configuration is setup to pin data to [Pinata](https://pinata.cloud), and it expects a Pinata JWT access token to be set to the `PINATA_API_TOKEN` environment variable.
+The default `pinningService` configuration reads in the name, API endpoint and API key from environment variables, to make it a little harder to accidentally check an access token into version control.
 
-If you don't have an API token, either get a free one or configure a different pinning service. With no pinning service, everything apart from the `minty pin` command should still work.
+You can define these values in a [dotenv file](https://www.npmjs.com/package/dotenv) so you don't need to set them in each shell session. Just create a file called `.env` inside the `config` directory or in the root directory of the repository, and make it look similar to this:
+
+```shell
+PINNING_SERVICE_KEY="Paste your nft.storage JWT token inside the quotes!"
+PINNING_SERVICE_NAME="nft.storage"
+PINNING_SERVICE_ENDPOINT="https://nft.storage/api"
+```
+
+The `.env` file will be ignored by git, so you don't need to worry about checking it in by accident.
+
+The snippet above will configure minty to use [nft.storage](https://nft.storage), a free service offered by Protocol Labs for storing public NFT data. You can find an example `.env` file for **nft.storage** at [`config/nft.storage.env.example`](./config/nft.storage.env.example).
+
+Any service that implements the [IPFS Remote Pinning API](https://ipfs.github.io/pinning-services-api-spec) can be used with Minty. To use [Pinata](https://pinata.cloud), check out the example at [`config/pinata.env.example`](./config/pinata.env.example).
+
+With no pinning service configured, everything apart from the `minty pin` command should still work.
 
 ### Mint a new NFT
 
@@ -137,7 +150,7 @@ minty show 1
 
 The assets for new tokens are stored in a local IPFS repository which is only _online_ while a local IPFS daemon is running. The `start-local-environment.sh` script starts a local daemon for you if you aren't already running and IPFS daemon. If you are, then the script just uses the daemon you already have.
 
-To make the data highly available without needing to run a local IPFS daemon 24/7, you can request that a [Remote Pinning Service](https://ipfs.github.io/pinning-services-api-spec) like [Pinata](https://pinata.cloud/) store a copy of your IPFS data on their IPFS nodes.
+To make the data highly available without needing to run a local IPFS daemon 24/7, you can request that a [Remote Pinning Service](https://ipfs.github.io/pinning-services-api-spec) like [Pinata](https://pinata.cloud/) or [nft.storage](https://nft.storage) store a copy of your IPFS data on their IPFS nodes.
 
 To pin the data for token, use the `minty pin` command:
 
@@ -149,12 +162,4 @@ minty pin 1
 > 🌿 Pinned all data for token id 1
 ```
 
-The `pin` command looks for a JWT access token from [Pinata](https://pinata.cloud) in the `PINATA_API_TOKEN` environment variable. Once you've obtained a token from Pinata, make a file in the `config` directory called `default.env`, and edit it to look like this, with your JWT token inside the quote marks:
-
-```shell
-PINATA_API_TOKEN="Paste your Pinata JWT token inside the quotes!"
-```
-
-Now Minty will be able to pin things to your Pinata account!
-
-If you'd prefer to use a different pinning service, you can edit the configuration in `config/default.js`.
+The `pin` command looks for some configuration info to connect to the remote pinning service. See the [Configuration section](#configuration) above for details.
