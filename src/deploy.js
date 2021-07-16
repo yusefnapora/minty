@@ -1,4 +1,4 @@
-const fs = require('fs/promises')
+const fs = require("fs").promises
 const {F_OK} = require('fs')
 
 const inquirer = require('inquirer')
