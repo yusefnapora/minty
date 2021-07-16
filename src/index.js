@@ -3,7 +3,6 @@
 // This file contains the main entry point for the command line `minty` app, and the command line option parsing code.
 // See minty.js for the core functionality.
 
-const fs = require('fs/promises')
 const path = require('path')
 const {Command} = require('commander')
 const inquirer = require('inquirer')
