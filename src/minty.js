@@ -2,7 +2,7 @@ const fs = require('fs/promises')
 const path = require('path')
 
 const CID = require('cids')
-const ipfsClient = require('ipfs-http-client')
+const { create: createIpfsClient } = require('ipfs-http-client')
 const all = require('it-all')
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayToString = require('uint8arrays/to-string')
@@ -64,7 +64,7 @@ class Minty {
         this.contract = await this.hardhat.ethers.getContractAt(abi, address)
 
         // create a local IPFS node
-        this.ipfs = ipfsClient(config.ipfsApiUrl)
+        this.ipfs = createIpfsClient(config.ipfsApiUrl)
 
         this._initialized = true
     }

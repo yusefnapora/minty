@@ -13,25 +13,25 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.1",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
-    "chai": "^4.3.3",
-    "ethereum-waffle": "^3.3.0",
-    "ethers": "^5.0.31",
-    "hardhat": "^2.1.1"
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.4.3",
+    "hardhat": "^2.5.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^3.4.1",
-    "chalk": "^4.1.0",
-    "cids": "^1.1.6",
-    "commander": "^7.1.0",
-    "concurrently": "^6.0.0",
+    "@openzeppelin/contracts": "^4.2.0",
+    "chalk": "^4.1.2",
+    "cids": "^1.1.7",
+    "commander": "^8.1.0",
+    "concurrently": "^6.2.0",
     "getconfig": "^4.5.0",
-    "go-ipfs": "^0.8.0",
-    "inquirer": "^8.0.0",
-    "ipfs-http-client": "^49.0.4",
+    "go-ipfs": "^0.9.1",
+    "inquirer": "^8.1.2",
+    "ipfs-http-client": "^51.0.1",
     "it-all": "^1.0.5",
     "json-colorizer": "^2.2.2",
-    "multiaddr": "^8.1.2"
+    "multiaddr": "^10.0.0"
   }
 }
