@@ -4,8 +4,9 @@ pragma solidity ^0.7.0;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Minty is ERC721 {
+contract Minty is ERC721, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
@@ -15,6 +16,7 @@ contract Minty is ERC721 {
 
     function mintToken(address owner, string memory metadataURI)
     public
+    onlyOwner
     returns (uint256)
     {
         _tokenIds.increment();
