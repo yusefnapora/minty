@@ -15,7 +15,7 @@ minty help mint
 > Options:
 >   -n, --name <name>         The name of the NFT
 >   -d, --description <desc>  A description of the NFT
->   -o, --owner <address>     The ethereum address that should own the NFT.If not provided,
+>   -o, --owner <address>     The Flow address that should own the NFT.If not provided,
 >                             defaults to the first signing address.
 >   -h, --help                display help for command
 ```
