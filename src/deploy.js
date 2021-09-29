@@ -3,7 +3,7 @@ const { F_OK } = require("fs");
 const inquirer = require("inquirer");
 const config = require("getconfig");
 const codeGen = require("../util/codegen");
-const { flowCliProjectDeployer } = require("../flow/cli-wrapper");
+const { flowCliProjectDeployer } = require("../util/flow-cli-wrapper");
 const fcl = require("@onflow/fcl");
 fcl.config().put("accessNode.api", config.flowEmulatorHTTPEndpoint);
 
