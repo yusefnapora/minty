@@ -2,14 +2,20 @@ const fs = require("fs/promises");
 const { F_OK } = require("fs");
 const inquirer = require("inquirer");
 const config = require("getconfig");
-const codeGen = require("../util/codegen");
+const {
+  createContract,
+  createSetupTX,
+  createMintTX
+} = require("../util/codegen");
 const { flowCliProjectDeployer } = require("../util/flow-cli-wrapper");
 const fcl = require("@onflow/fcl");
-fcl.config().put("accessNode.api", config.flowEmulatorHTTPEndpoint);
+fcl.config().put("accessNode.api", config.flowHTTPEndpoint);
 
 async function deployContract(name, symbol) {
   const deploymentInfo = deploymentInfoFormatter(name);
-  await codeGen(name);
+  await createContract(name);
+  await createSetupTX(name);
+  await createMintTX(name);
   await saveDeploymentInfo(deploymentInfo);
   await flowCliProjectDeployer();
   return deploymentInfo;
@@ -18,25 +24,25 @@ async function deployContract(name, symbol) {
 function deploymentInfoFormatter(contractName) {
   return {
     networks: {
-      emulator: config.flowEmulatorGRPCEndpoint
+      emulator: config.flowGRPCEndpoint
     },
     accounts: {
       "emulator-account": {
-        address: config.flowEmulatorAccountAddress,
-        keys: config.flowEmulatorAccountPrivateKey
+        address: config.adminFlowAccount,
+        keys: config.adminFlowPrivateKey
       }
     },
     contracts: {
       [contractName]: {
         source: `flow/cadence/contracts/${contractName}.cdc`,
         aliases: {
-          emulator: config.flowEmulatorAccountAddress
+          emulator: config.adminFlowAccount
         }
       },
       FungibleToken: {
         source: "flow/cadence/contracts/FungibleToken.cdc",
         aliases: {
-          emulator: config.flowEmulatorFungibleTokenAddress
+          emulator: config.fungibleTokenAddress
         }
       }
     },
@@ -87,20 +93,21 @@ async function loadDeploymentInfo() {
 }
 
 function validateDeploymentInfo(deployInfo) {
-  const { contract } = deployInfo;
-  if (!contract) {
-    throw new Error('required field "contract" not found');
-  }
-  const required = (arg) => {
-    if (!deployInfo.contract.hasOwnProperty(arg)) {
-      throw new Error(`required field "contract.${arg}" not found`);
-    }
-  };
-
-  required("networks");
-  required("accounts");
-  required("contracts");
-  required("deployments");
+  // const { contracts } = deployInfo;
+  // if (!contract) {
+  //   throw new Error('required field "contract" not found');
+  // }
+  // const required = (arg) => {
+  //   if (!deployInfo.contract.hasOwnProperty(arg)) {
+  //     throw new Error(`required field "contract.${arg}" not found`);
+  //   }
+  // };
+  // required("networks");
+  // required("accounts");
+  // required("contracts");
+  // required("deployments");
+  // TODO
+  return true;
 }
 
 async function fileExists(path) {

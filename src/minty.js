@@ -1,13 +1,14 @@
 const fs = require("fs/promises");
 const path = require("path");
-
+const fcl = require("@onflow/fcl");
 const CID = require("cids");
 const ipfsClient = require("ipfs-http-client");
+const Nebulus = require("nebulus");
 const all = require("it-all");
 const uint8ArrayConcat = require("uint8arrays/concat");
 const uint8ArrayToString = require("uint8arrays/to-string");
-
 const { loadDeploymentInfo } = require("./deploy");
+const FlowMinter = require("../flow/flowMinter");
 
 // The getconfig package loads configuration from files located in the the `config` directory.
 // See https://www.npmjs.com/package/getconfig for info on how to override the default config for
@@ -30,6 +31,12 @@ async function MakeMinty() {
   return m;
 }
 
+async function MakeFlowMinter() {
+  const m = new FlowMinter();
+  await m.init();
+  return m;
+}
+
 /**
  * Minty is the main object responsible for storing NFT data and interacting with the smart contract.
  * Before constructing, make sure that the contract has been deployed and a deployment
@@ -41,7 +48,8 @@ async function MakeMinty() {
 class Minty {
   constructor() {
     this.ipfs = null;
-    this.contract = null;
+    this.nebulus = null;
+    this.flowMinter = null;
     this.deployInfo = null;
     this._initialized = false;
   }
@@ -55,10 +63,13 @@ class Minty {
     // details written to a deployment info file. The default location is `./minty-deployment.json`,
     // in the config.
     this.deployInfo = await loadDeploymentInfo();
-    this.contract = ""; // TODO
+    this.flowMinter = await MakeFlowMinter();
 
     // create a local IPFS node
-    this.ipfs = ipfsClient(config.ipfsApiUrl);
+    // this.ipfs = ipfsClient(config.ipfsApiUrl);
+    this.nebulus = new Nebulus({
+      path: path.resolve(__dirname, config.nebulusPath)
+    });
 
     this._initialized = true;
   }
@@ -94,29 +105,31 @@ class Minty {
     const filePath = options.path || "asset.bin";
     const basename = path.basename(filePath);
 
-    // When you add an object to IPFS with a directory prefix in its path,
-    // IPFS will create a directory structure for you. This is nice, because
-    // it gives us URIs with descriptive filenames in them e.g.
+    // Using 'folder' gives us URIs with descriptive filenames in them e.g.
     // 'ipfs://QmaNZ2FCgvBPqnxtkbToVVbK2Nes6xk5K4Ns6BsmkPucAM/cat-pic.png' instead of
     // 'ipfs://QmaNZ2FCgvBPqnxtkbToVVbK2Nes6xk5K4Ns6BsmkPucAM'
-    const ipfsPath = "/nft/" + basename;
-    const { cid: assetCid } = await this.ipfs.add(
-      { path: ipfsPath, content },
-      ipfsAddOptions
-    );
 
-    // make the NFT metadata JSON
+    // add the asset to IPFS
+    const assetCid = await this.nebulus.folder({
+      [basename]: await this.nebulus.add(
+        path.resolve(__dirname, "../" + filePath)
+      )
+    });
+
     const assetURI = ensureIpfsUriPrefix(assetCid) + "/" + basename;
     const metadata = await this.makeNFTMetadata(assetURI, options);
 
     // add the metadata to IPFS
-    const { cid: metadataCid } = await this.ipfs.add(
-      { path: "/nft/metadata.json", content: JSON.stringify(metadata) },
-      ipfsAddOptions
-    );
+    const metadataCid = await this.nebulus.folder({
+      "metadata.json": await this.nebulus.add(
+        Buffer.from(JSON.stringify(metadata))
+      )
+    });
+
+    // make the NFT metadata JSON
     const metadataURI = ensureIpfsUriPrefix(metadataCid) + "/metadata.json";
 
-    // get the address of the token owner from options, or use the default signing address if no owner is given
+    // Get the address of the token owner from options, or use the default signing address if no owner is given
     let ownerAddress = options.owner;
     if (!ownerAddress) {
       ownerAddress = await this.defaultOwnerAddress();
@@ -127,7 +140,7 @@ class Minty {
 
     // format and return the results
     return {
-      tokenId,
+      tokenId: "TOKEN ID",
       ownerAddress,
       metadata,
       assetURI,
@@ -168,7 +181,7 @@ class Minty {
     return {
       name,
       description,
-      image: assetURI
+      asset: assetURI
     };
   }
 
@@ -257,46 +270,38 @@ class Minty {
   async mintToken(ownerAddress, metadataURI) {
     // the smart contract adds an ipfs:// prefix to all URIs, so make sure it doesn't get added twice
     metadataURI = stripIpfsUriPrefix(metadataURI);
+    const result = await this.flowMinter.setupAccount();
+    const minted = await this.flowMinter.mint(ownerAddress, metadataURI);
 
     // Call the mintToken method to issue a new token to the given address
     // This returns a transaction object, but the transaction hasn't been confirmed
     // yet, so it doesn't have our token id.
-    const tx = await this.contract.mintToken(ownerAddress, metadataURI);
+    // const tx = await this.contract.mintToken(ownerAddress, metadataURI);
 
-    // The OpenZeppelin base ERC721 contract emits a Transfer event when a token is issued.
-    // tx.wait() will wait until a block containing our transaction has been mined and confirmed.
-    // The transaction receipt contains events emitted while processing the transaction.
-    const receipt = await tx.wait();
-    for (const event of receipt.events) {
-      if (event.event !== "Transfer") {
-        console.log("ignoring unknown event type ", event.event);
-        continue;
-      }
-      return event.args.tokenId.toString();
-    }
+    // // The OpenZeppelin base ERC721 contract emits a Transfer event when a token is issued.
+    // // tx.wait() will wait until a block containing our transaction has been mined and confirmed.
+    // // The transaction receipt contains events emitted while processing the transaction.
+    // const receipt = await tx.wait();
+    // for (const event of receipt.events) {
+    //   if (event.event !== "Transfer") {
+    //     console.log("ignoring unknown event type ", event.event);
+    //     continue;
+    //   }
+    //   return event.args.tokenId.toString();
+    // }
 
-    throw new Error("unable to get token id");
+    // throw new Error("unable to get token id");
   }
 
   async transferToken(tokenId, toAddress) {
-    const fromAddress = await this.getTokenOwner(tokenId);
-
-    // because the base ERC721 contract has two overloaded versions of the safeTranferFrom function,
-    // we need to refer to it by its fully qualified name.
-    const tranferFn =
-      this.contract["safeTransferFrom(address,address,uint256)"];
-    const tx = await tranferFn(fromAddress, toAddress, tokenId);
-
-    // wait for the transaction to be finalized
-    await tx.wait();
+    // TODO
   }
 
   /**
    * @returns {Promise<string>} - the default signing address that should own new tokens, if no owner was specified.
    */
   async defaultOwnerAddress() {
-    const signers = []; // TODO
-    return signers[0].address;
+    return config.adminFlowAccount;
   }
 
   /**

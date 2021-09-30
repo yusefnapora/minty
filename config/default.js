@@ -1,4 +1,7 @@
 const config = {
+  defaultContractName: "CoolCats",
+  defaultContractSymbol: "CCT",
+
   // The pinningService config tells minty what remote pinning service to use for pinning the IPFS data for a token.
   // The values are read in from environment variables, to discourage checking credentials into source control.
   // You can make things easy by creating a .env file with your environment variable definitions. See the example files
@@ -14,19 +17,24 @@ const config = {
   deploymentConfigFile: "minty-deployment.json",
 
   // If you're running IPFS on a non-default port, update this URL. If you're using the IPFS defaults, you should be all set.
-  ipfsApiUrl: "http://localhost:5001",
+  ipfsApiUrl: "$$IPFS_API_URL",
 
   // If you're running the local IPFS gateway on a non-default port, or if you want to use a public gatway when displaying IPFS gateway urls, edit this.
-  ipfsGatewayUrl: "http://localhost:8080/ipfs",
+  ipfsGatewayUrl: "$$IPFS_GATEWAY_URL",
 
-  flowEmulatorHTTPEndpoint: "$$FLOW_EMULATOR_HTTP_ENDPOINT",
-  flowEmulatorGRPCEndpoint: "$$FLOW_EMULATOR_GRPC_ENDPOINT",
-  flowEmulatorAccountAddress: "$$FLOW_EMULATOR_ACCOUNT_ADDRESS",
-  flowEmulatorAccountPrivateKey: "$$FLOW_EMULATOR_ACCOUNT_PRIVATE_KEY",
-  flowEmulatorFungibleTokenAddress: "$$FLOW_EMULATOR_FUNGIBLE_TOKEN_ADDRESS",
+  flowHTTPEndpoint: "$$FLOW_EMULATOR_HTTP_ENDPOINT",
+  flowGRPCEndpoint: "$$FLOW_EMULATOR_GRPC_ENDPOINT",
 
-  defaultContractName: "CoolCats",
-  defaultContractSymbol: "CCT"
+  // This is the default owner address and signing key for all newly minted NFTs
+  adminFlowAccount: "$$FLOW_EMULATOR_ACCOUNT_ADDRESS",
+  adminFlowPrivateKey: "$$FLOW_EMULATOR_ACCOUNT_PRIVATE_KEY",
+
+  fungibleTokenAddress: "$$FLOW_EMULATOR_FUNGIBLE_TOKEN_ADDRESS",
+  nonFungibleTokenAddress: "$$FLOW_EMULATOR_NON_FUNGIBLE_TOKEN_ADDRESS",
+
+  // Store IPFS NFT asset & metadata CIDs and data before pushing to the live network
+  // https://github.com/rarepress/nebulus
+  nebulusPath: "../.nebulus"
 };
 
 module.exports = config;

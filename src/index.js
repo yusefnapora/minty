@@ -12,7 +12,7 @@ const chalk = require("chalk");
 const colorize = require("json-colorizer");
 const config = require("getconfig");
 const { MakeMinty } = require("./minty");
-const { deployContract, saveDeploymentInfo } = require("./deploy");
+const { deployContract } = require("./deploy");
 
 const colorizeOptions = {
   pretty: true,

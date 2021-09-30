@@ -3,7 +3,7 @@ const exec = util.promisify(require("child_process").exec);
 
 async function flowCliProjectDeployer() {
   const { stdout: out1, stderr: deployCoreContractsError } = await exec(
-    "flow project deploy --network=emulator -f flow.json --update"
+    "flow project deploy --network=emulator -f flow.json --update -o json"
   );
 
   if (deployCoreContractsError) {
@@ -11,10 +11,8 @@ async function flowCliProjectDeployer() {
     return;
   }
 
-  console.log(out1);
-
   const { stdout: out2, stderr: deployCustomContractError } = await exec(
-    "flow project deploy --network=emulator -f flow.json -f minty-deployment.json --update"
+    "flow project deploy --network=emulator -f flow.json -f minty-deployment.json --update -o json"
   );
 
   if (deployCustomContractError) {
@@ -22,7 +20,7 @@ async function flowCliProjectDeployer() {
     return;
   }
 
-  console.log(out2);
+  return JSON.parse(out2);
 }
 
 module.exports = { flowCliProjectDeployer };
