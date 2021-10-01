@@ -3,7 +3,7 @@ const fcl = require("@onflow/fcl");
 // const { encodeKey } = require("@onflow/util-encode-key");
 // const fs = require("fs/promises");
 // const path = require("path");
-const { signWithKey, SigAlgos, HashAlgos } = require("../lib/crypto");
+const { signWithKey } = require("../flow/crypto");
 class FlowService {
   constructor(minterFlowAddress, minterPrivateKeyHex, minterAccountIndex) {
     this.minterFlowAddress = minterFlowAddress;

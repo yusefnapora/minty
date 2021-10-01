@@ -11,5 +11,14 @@ async function getParams() {
   const params = YAML.parse(paramsFile);
   return params;
 }
+async function updateParams(name, symbol) {
+  await fs.writeFile(
+    path.resolve(__dirname, "../params.yml"),
+    `
+    name: ${name}
+    symbol: ${symbol || ""}
+    `
+  );
+}
 
-module.exports = getParams;
+module.exports = { getParams, updateParams };

@@ -1,6 +1,7 @@
 const fs = require("fs/promises");
 const path = require("path");
 const CID = require("cids");
+const { uid } = require("@onflow/util-uid");
 // const ipfsClient = require("ipfs-http-client");
 const Nebulus = require("nebulus");
 const all = require("it-all");
@@ -116,7 +117,8 @@ class Minty {
    * If missing, the default signing address will be used.
    *
    * @typedef {object} CreateNFTResult
-   * @property {string} tokenId - the unique ID of the new token
+   * @property {string} txId - The id of the minting transaction
+   * @property {number} tokenId - the unique ID of the new token
    * @property {string} ownerAddress - the Flow address of the new token's owner
    * @property {object} metadata - the JSON metadata stored in IPFS and referenced by the token's metadata URI
    * @property {string} metadataURI - an ipfs:// URI for the NFT metadata
@@ -128,7 +130,6 @@ class Minty {
    */
 
   async createNFTFromAssetData(options) {
-    // add the asset to IPFS
     const filePath = options.path || "asset.bin";
     const basename = path.basename(filePath);
 
@@ -163,11 +164,15 @@ class Minty {
     }
 
     // mint a new token referencing the metadata URI
-    const tokenId = await this.mintToken(ownerAddress, metadataURI);
+    const minted = await this.mintToken(ownerAddress, metadataURI);
+    const deposit = minted.events.find((event) =>
+      event.type.includes("Deposit")
+    );
 
     // format and return the results
-    return {
-      tokenId: "TOKEN ID",
+    const details = {
+      txId: deposit.transactionId,
+      tokenId: deposit.data.id,
       ownerAddress,
       metadata,
       assetURI,
@@ -175,6 +180,17 @@ class Minty {
       assetGatewayURL: makeGatewayURL(assetURI),
       metadataGatewayURL: makeGatewayURL(metadataURI)
     };
+
+    await fs.writeFile(
+      path.resolve(
+        __dirname,
+        config.mintDataPath + `/${details.tokenId}-${uid()}.json`
+      ),
+      JSON.stringify(details),
+      "utf8"
+    );
+
+    return details;
   }
 
   /**
@@ -248,30 +264,37 @@ class Minty {
    * @returns {Promise<NFTInfo>}
    */
   async getNFT(tokenId, opts) {
-    const { metadata, metadataURI } = await this.getNFTMetadata(tokenId);
-    const ownerAddress = await this.getTokenOwner(tokenId);
-    const metadataGatewayURL = makeGatewayURL(metadataURI);
-    const nft = {
-      tokenId,
-      metadata,
-      metadataURI,
-      metadataGatewayURL,
-      ownerAddress
-    };
+    const flowData = await this.flowMinter.getNFTDetails(
+      config.adminFlowAccount,
+      tokenId
+    );
 
-    const { fetchAsset, fetchCreationInfo } = opts || {};
-    if (metadata.image) {
-      nft.assetURI = metadata.image;
-      nft.assetGatewayURL = makeGatewayURL(metadata.image);
-      if (fetchAsset) {
-        nft.assetDataBase64 = await this.getIPFSBase64(metadata.image);
-      }
-    }
+    // const { metadata, metadataURI } = await this.getNFTMetadata(tokenId);
+    // const ownerAddress = await this.getTokenOwner(tokenId);
+    // const metadataGatewayURL = makeGatewayURL(metadataURI);
 
-    if (fetchCreationInfo) {
-      nft.creationInfo = await this.getCreationInfo(tokenId);
-    }
-    return nft;
+    // const nft = {
+    //   tokenId,
+    //   metadata,
+    //   metadataURI,
+    //   metadataGatewayURL,
+    //   ownerAddress
+    // };
+
+    // const { fetchAsset, fetchCreationInfo } = opts || {};
+    // if (metadata.asset) {
+    //   nft.assetURI = metadata.asset;
+    //   nft.assetGatewayURL = makeGatewayURL(metadata.asset);
+    //   if (fetchAsset) {
+    //     nft.assetDataBase64 = await this.getIPFSBase64(metadata.asset);
+    //   }
+    // }
+
+    // if (fetchCreationInfo) {
+    //   nft.creationInfo = await this.getCreationInfo(tokenId);
+    // }
+    console.log(flowData);
+    return flowData;
   }
 
   /**
@@ -297,32 +320,14 @@ class Minty {
    *
    * @param {string} ownerAddress - the Flow address that should own the new token
    * @param {string} metadataURI - IPFS URI for the NFT metadata that should be associated with this token
-   * @returns {Promise<string>} - the ID of the new token
+   * @returns {Promise<any>} - The result from minting the token, includes events
    */
   async mintToken(ownerAddress, metadataURI) {
     // the smart contract adds an ipfs:// prefix to all URIs, so make sure it doesn't get added twice
     metadataURI = stripIpfsUriPrefix(metadataURI);
-    const result = await this.flowMinter.setupAccount();
+    await this.flowMinter.setupAccount();
     const minted = await this.flowMinter.mint(ownerAddress, metadataURI);
-
-    // Call the mintToken method to issue a new token to the given address
-    // This returns a transaction object, but the transaction hasn't been confirmed
-    // yet, so it doesn't have our token id.
-    // const tx = await this.contract.mintToken(ownerAddress, metadataURI);
-
-    // // The OpenZeppelin base ERC721 contract emits a Transfer event when a token is issued.
-    // // tx.wait() will wait until a block containing our transaction has been mined and confirmed.
-    // // The transaction receipt contains events emitted while processing the transaction.
-    // const receipt = await tx.wait();
-    // for (const event of receipt.events) {
-    //   if (event.event !== "Transfer") {
-    //     console.log("ignoring unknown event type ", event.event);
-    //     continue;
-    //   }
-    //   return event.args.tokenId.toString();
-    // }
-
-    // throw new Error("unable to get token id");
+    return minted;
   }
 
   async transferToken(tokenId, toAddress) {

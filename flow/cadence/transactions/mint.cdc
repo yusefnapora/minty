@@ -1,5 +1,5 @@
 import NonFungibleToken from "../contracts/NonFungibleToken.cdc"
-import McMoments from "../contracts/McMoments.cdc"
+import CoolCats from "../contracts/CoolCats.cdc"
 
 // This transction uses the NFTMinter resource to mint a new NFT.
 //
@@ -9,12 +9,12 @@ import McMoments from "../contracts/McMoments.cdc"
 transaction(recipient: Address, metadata: String) {
     
     // local variable for storing the minter reference
-    let minter: &McMoments.NFTMinter
+    let minter: &CoolCats.NFTMinter
 
     prepare(signer: AuthAccount) {
 
         // borrow a reference to the NFTMinter resource in storage
-        self.minter = signer.borrow<&McMoments.NFTMinter>(from: McMoments.MinterStoragePath)
+        self.minter = signer.borrow<&CoolCats.NFTMinter>(from: CoolCats.MinterStoragePath)
             ?? panic("Could not borrow a reference to the NFT minter")
     }
 
@@ -24,7 +24,7 @@ transaction(recipient: Address, metadata: String) {
 
         // borrow the recipient's public NFT collection reference
         let receiver = recipient
-            .getCapability(McMoments.CollectionPublicPath)!
+            .getCapability(CoolCats.CollectionPublicPath)!
             .borrow<&{NonFungibleToken.CollectionPublic}>()
             ?? panic("Could not get receiver reference to the NFT Collection")
 

@@ -9,7 +9,7 @@ const inquirer = require("inquirer");
 const chalk = require("chalk");
 const colorize = require("json-colorizer");
 const config = require("getconfig");
-const getParams = require("../util/get-params");
+const { getParams, updateParams } = require("../util/params-helpers");
 const { MakeMinty } = require("./minty");
 const { deployContract } = require("./deploy");
 
@@ -56,10 +56,10 @@ async function main() {
     )
     .action(getNFT);
 
-  program
-    .command("transfer <token-id> <to-address>")
-    .description("transfer an NFT to a new owner")
-    .action(transferNFT);
+  // program
+  //   .command("transfer <token-id> <to-address>")
+  //   .description("transfer an NFT to a new owner")
+  //   .action(transferNFT);
 
   program
     .command("pin <token-id>")
@@ -109,16 +109,7 @@ async function batchCreateNFT(options) {
   if (!answer.confirm) return;
 
   const result = await minty.createNFTsFromCSVFile(options.data, (nft) => {
-    alignOutput([
-      ["Token ID:", chalk.green(nft.tokenId)],
-      ["Metadata Address:", chalk.blue(nft.metadataURI)],
-      ["Metadata Gateway URL:", chalk.blue(nft.metadataGatewayURL)],
-      ["Asset Address:", chalk.blue(nft.assetURI)],
-      ["Asset Gateway URL:", chalk.blue(nft.assetGatewayURL)]
-    ]);
-
-    console.log("NFT Metadata:");
-    console.log(colorize(JSON.stringify(nft.metadata), colorizeOptions));
+    console.log(colorize(JSON.stringify(nft), colorizeOptions));
   });
 
   console.log(`✨ Success! ${result.total} NFTs were minted! ✨`);
@@ -195,6 +186,7 @@ async function pinNFTData(tokenId) {
 
 async function deploy(options) {
   const filename = options.output;
+  await updateParams(options.name, options.symbol);
   const info = await deployContract(options.name, options.symbol);
   if (!info) return;
   console.log(filename, JSON.stringify(info, null, 2));

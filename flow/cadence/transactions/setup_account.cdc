@@ -1,21 +1,21 @@
 import NonFungibleToken from "../contracts/NonFungibleToken.cdc"
-import McMoments from "../contracts/McMoments.cdc"
+import CoolCats from "../contracts/CoolCats.cdc"
 
 // This transaction configures an account to hold Kitty Items.
 
 transaction {
     prepare(signer: AuthAccount) {
         // if the account doesn't already have a collection
-        if signer.borrow<&McMoments.Collection>(from: McMoments.CollectionStoragePath) == nil {
+        if signer.borrow<&CoolCats.Collection>(from: CoolCats.CollectionStoragePath) == nil {
 
             // create a new empty collection
-            let collection <- McMoments.createEmptyCollection()
+            let collection <- CoolCats.createEmptyCollection()
             
             // save it to the account
-            signer.save(<-collection, to: McMoments.CollectionStoragePath)
+            signer.save(<-collection, to: CoolCats.CollectionStoragePath)
 
             // create a public capability for the collection
-            signer.link<&McMoments.Collection{NonFungibleToken.CollectionPublic, McMoments.McMomentsCollectionPublic}>(McMoments.CollectionPublicPath, target: McMoments.CollectionStoragePath)
+            signer.link<&CoolCats.Collection{NonFungibleToken.CollectionPublic, CoolCats.CoolCatsCollectionPublic}>(CoolCats.CollectionPublicPath, target: CoolCats.CollectionStoragePath)
         }
     }
 }

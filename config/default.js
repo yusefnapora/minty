@@ -35,6 +35,7 @@ const config = {
   // Store IPFS NFT asset & metadata CIDs and data before pushing to the live network
   // https://github.com/rarepress/nebulus
   nebulusPath: "../ipfs-data",
+  mintDataPath: "../mint-data",
 
   // Location of NFT metadata and assets for minting
   nftDataPath: "../NFT-Datasheet.csv",

@@ -5,7 +5,8 @@ const config = require("getconfig");
 const {
   createContract,
   createSetupTX,
-  createMintTX
+  createMintTX,
+  createReadScript
 } = require("../util/codegen");
 const { flowCliProjectDeployer } = require("../util/flow-cli-wrapper");
 const fcl = require("@onflow/fcl");
@@ -18,6 +19,7 @@ async function deployContract(name, symbol) {
   await createContract(name);
   await createSetupTX(name);
   await createMintTX(name);
+  await createReadScript(name);
   await flowCliProjectDeployer();
   return deploymentInfo;
 }
