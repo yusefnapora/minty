@@ -1,15 +1,14 @@
 const fs = require("fs/promises");
 const path = require("path");
-const fcl = require("@onflow/fcl");
 const CID = require("cids");
-const ipfsClient = require("ipfs-http-client");
+// const ipfsClient = require("ipfs-http-client");
 const Nebulus = require("nebulus");
 const all = require("it-all");
 const uint8ArrayConcat = require("uint8arrays/concat");
 const uint8ArrayToString = require("uint8arrays/to-string");
 const { loadDeploymentInfo } = require("./deploy");
 const FlowMinter = require("../flow/flowMinter");
-
+const generateMetadata = require("../util/generate-metadata");
 // The getconfig package loads configuration from files located in the the `config` directory.
 // See https://www.npmjs.com/package/getconfig for info on how to override the default config for
 // different environments (e.g. testnet, mainnet, staging, production, etc).
@@ -71,12 +70,40 @@ class Minty {
       path: path.resolve(__dirname, config.nebulusPath)
     });
 
+    this.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
     this._initialized = true;
   }
 
   //////////////////////////////////////////////
   // ------ NFT Creation
   //////////////////////////////////////////////
+  /**
+   * Create a new NFT from the given CSV data.
+   *
+   * @param {object} metadata - a Buffer or UInt8Array of data (e.g. for an image)
+ 
+   * @typedef {object} BatchCreateNFTResult
+   * @property {number} total - the total number of NFTs created
+
+   *
+   * @returns {Promise<BatchCreateNFTResult>}
+   */
+  async createNFTsFromCSVFile(csvPath, cb) {
+    const metadatas = await this.gernerateNFTMetadata(csvPath);
+    console.log("Minting started...");
+    for (const metadata of metadatas) {
+      const result = await this.createNFTFromAssetData(null, {
+        path: "assets/" + metadata.asset,
+        ...metadata
+      });
+      cb(result);
+      await this.sleep(config.RATE_LIMIT_MS);
+    }
+    return {
+      total: metadatas.length
+    };
+  }
 
   /**
    * Create a new NFT from the given asset data.
@@ -100,6 +127,7 @@ class Minty {
    *
    * @returns {Promise<CreateNFTResult>}
    */
+
   async createNFTFromAssetData(content, options) {
     // add the asset to IPFS
     const filePath = options.path || "asset.bin";
@@ -176,13 +204,16 @@ class Minty {
    * @returns {object} - NFT metadata object
    */
   async makeNFTMetadata(assetURI, options) {
-    const { name, description } = options;
     assetURI = ensureIpfsUriPrefix(assetURI);
     return {
-      name,
-      description,
+      ...options,
       asset: assetURI
     };
+  }
+
+  gernerateNFTMetadata(csvPath) {
+    const metadata = generateMetadata(csvPath);
+    return metadata;
   }
 
   //////////////////////////////////////////////
@@ -490,6 +521,10 @@ class Minty {
     }
     await this.ipfs.pin.remote.service.add(name, { endpoint, key });
   }
+
+  //////////////////////////////////////////////
+  // -------- Metadata
+  //////////////////////////////////////////////
 }
 
 //////////////////////////////////////////////

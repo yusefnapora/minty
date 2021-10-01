@@ -3,11 +3,11 @@ const fs = require("fs");
 const path = require("path");
 const config = require("getconfig");
 
-const generateMetaData = async () => {
-  const nftCSV = fs.readFileSync(path.resolve(__dirname, config.nftDataPath));
+const generateMetaData = async (csvPath) => {
+  const nftCSV = fs.readFileSync(path.resolve(__dirname, csvPath));
   // Parse the CSV content
   const records = parse(nftCSV);
-  // Print records to the console
+
   const fields = records[0];
   const data = records.slice(1);
 
@@ -39,18 +39,7 @@ const generateMetaData = async () => {
     return record;
   });
 
-  console.log(metadata);
   return metadata;
 };
 
-function generate() {
-  try {
-    generateMetaData();
-  } catch (e) {
-    console.log(e);
-  }
-}
-
-generate();
-
-module.exports = generate;
+module.exports = generateMetaData;

@@ -36,8 +36,12 @@ const config = {
   // https://github.com/rarepress/nebulus
   nebulusPath: "../.nebulus",
 
+  // Location of NFT metadata and assets for minting
   nftDataPath: "../NFT-Datasheet.csv",
-  nftAssetPath: "../assets"
+  nftAssetPath: "../assets",
+
+  // How fast to batch mint txs
+  RATE_LIMIT_MS: 2000
 };
 
 module.exports = config;

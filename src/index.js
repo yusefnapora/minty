@@ -34,7 +34,17 @@ async function main() {
 
   // commands
   program
-    .command("mint <image-path>")
+    .command("mint")
+    .description("create multiple NFTs using data from a csv file")
+    .option(
+      "-d, --data <csv-path>",
+      "The location of the csv file to use for minting",
+      config.nftDataPath
+    )
+    .action(batchCreateNFT);
+
+  program
+    .command("mintone <image-path>")
     .description("create a new NFT from an image file")
     .option("-n, --name <name>", "The name of the NFT")
     .option("-d, --description <desc>", "A description of the NFT")
@@ -70,7 +80,7 @@ async function main() {
     .option(
       "-o, --output <deploy-file-path>",
       "Path to write deployment info to",
-      config.deploymentConfigFile || "minty-deployment.json"
+      config.deploymentConfigFile
     )
     .option(
       "-n, --name <name>",
@@ -95,7 +105,25 @@ async function main() {
 
 // ---- command action functions
 
-async function createNFT(imagePath, options) {
+async function batchCreateNFT(options) {
+  const minty = await MakeMinty();
+  const result = await minty.createNFTsFromCSVFile(options.data, (nft) => {
+    alignOutput([
+      ["Token ID:", chalk.green(nft.tokenId)],
+      ["Metadata Address:", chalk.blue(nft.metadataURI)],
+      ["Metadata Gateway URL:", chalk.blue(nft.metadataGatewayURL)],
+      ["Asset Address:", chalk.blue(nft.assetURI)],
+      ["Asset Gateway URL:", chalk.blue(nft.assetGatewayURL)]
+    ]);
+
+    console.log("NFT Metadata:");
+    console.log(colorize(JSON.stringify(nft.metadata), colorizeOptions));
+  });
+
+  console.log(`✨ Success! ${result.total} NFTs were minted! ✨`);
+}
+
+async function createNFT(assetPath, options) {
   const minty = await MakeMinty();
 
   // prompt for missing details if not provided as cli args
@@ -109,7 +137,7 @@ async function createNFT(imagePath, options) {
     }
   });
 
-  const nft = await minty.createNFTFromAssetFile(imagePath, answers);
+  const nft = await minty.createNFTFromAssetFile(assetPath, answers);
   console.log("✨ Minted a new NFT: ");
 
   alignOutput([
