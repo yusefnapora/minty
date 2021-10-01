@@ -81,7 +81,7 @@ class Minty {
   /**
    * Create a new NFT from the given CSV data.
    *
-   * @param {object} metadata - a Buffer or UInt8Array of data (e.g. for an image)
+   * @param {string} csvPath - Path to the csv data file
  
    * @typedef {object} BatchCreateNFTResult
    * @property {number} total - the total number of NFTs created
@@ -93,7 +93,7 @@ class Minty {
     const metadatas = await this.gernerateNFTMetadata(csvPath);
     console.log("Minting started...");
     for (const metadata of metadatas) {
-      const result = await this.createNFTFromAssetData(null, {
+      const result = await this.createNFTFromAssetData({
         path: "assets/" + metadata.asset,
         ...metadata
       });
@@ -108,9 +108,8 @@ class Minty {
   /**
    * Create a new NFT from the given asset data.
    *
-   * @param {Buffer|Uint8Array} content - a Buffer or UInt8Array of data (e.g. for an image)
    * @param {object} options
-   * @param {?string} path - optional file path to set when storing the data on IPFS
+   * @param {?string} path - the path to an image file or other asset to use
    * @param {?string} name - optional name to set in NFT metadata
    * @param {?string} description - optional description to store in NFT metadata
    * @param {?string} owner - optional Flow address that should own the new NFT.
@@ -128,7 +127,7 @@ class Minty {
    * @returns {Promise<CreateNFTResult>}
    */
 
-  async createNFTFromAssetData(content, options) {
+  async createNFTFromAssetData(options) {
     // add the asset to IPFS
     const filePath = options.path || "asset.bin";
     const basename = path.basename(filePath);
