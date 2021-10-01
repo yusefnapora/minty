@@ -204,8 +204,10 @@ class Minty {
    */
   async makeNFTMetadata(assetURI, options) {
     assetURI = ensureIpfsUriPrefix(assetURI);
+    // remove the assetpath from the options
+    const { path, ...metadata } = options;
     return {
-      ...options,
+      ...metadata,
       asset: assetURI
     };
   }
