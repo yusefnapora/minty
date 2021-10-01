@@ -1,8 +1,9 @@
 const fcl = require("@onflow/fcl");
-const { ec: EC } = require("elliptic");
-const { SHA3 } = require("sha3");
-const ec = new EC("p256");
-
+// const t = require("@onflow/types");
+// const { encodeKey } = require("@onflow/util-encode-key");
+// const fs = require("fs/promises");
+// const path = require("path");
+const { signWithKey, SigAlgos, HashAlgos } = require("../lib/crypto");
 class FlowService {
   constructor(minterFlowAddress, minterPrivateKeyHex, minterAccountIndex) {
     this.minterFlowAddress = minterFlowAddress;
@@ -15,7 +16,6 @@ class FlowService {
       const user = await this.getAccount(this.minterFlowAddress);
       const key = user.keys[this.minterAccountIndex];
 
-      const sign = this.signWithKey;
       const pk = this.minterPrivateKeyHex;
 
       return {
@@ -27,31 +27,58 @@ class FlowService {
           return {
             addr: fcl.withPrefix(user.address),
             keyId: Number(key.index),
-            signature: sign(pk, signable.message)
+            signature: signWithKey(
+              pk,
+              // TODO: These are the emulator defaults,
+              // And we'll use these to create a testnet account
+              // Consider setting defaults from env
+              // eg. https://github.com/onflow/faucet/blob/main/lib/config.ts
+              "ECDSA_P256",
+              "SHA3_256",
+              signable.message
+            )
           };
         }
       };
     };
   };
 
+  // createAccount = async (publicKey, sigAlgo, hashAlgo, authorization) => {
+  //   const encodedPublicKey = encodeKey(publicKey, sigAlgo, hashAlgo, 1000);
+
+  //   let transaction = await fs.readFile(
+  //     path.join(__dirname, `./cadence/transactions/create_account.cdc`),
+  //     "utf8"
+  //   );
+
+  //   const result = await this.sendTx({
+  //     transaction,
+  //     args: [fcl.arg(encodedPublicKey, t.String), fcl.arg(0, t.UFix64)],
+  //     authorizations: [authorization],
+  //     payer: authorization,
+  //     proposer: authorization
+  //   });
+
+  //   const accountCreatedEvent = result.events.find(
+  //     (event) => event.type === accountCreatedEventType
+  //   );
+
+  //   if (!accountCreatedEvent) {
+  //     throw "Transaction did not emit account creation event";
+  //   }
+
+  //   const address = accountCreatedEvent.data.address;
+  //   const transactionId = accountCreatedEvent.transactionId;
+
+  //   return {
+  //     address,
+  //     transactionId
+  //   };
+  // };
+
   getAccount = async (addr) => {
     const { account } = await fcl.send([fcl.getAccount(addr)]);
     return account;
-  };
-
-  signWithKey = (privateKey, msg) => {
-    const key = ec.keyFromPrivate(Buffer.from(privateKey, "hex"));
-    const sig = key.sign(this.hashMsg(msg));
-    const n = 32;
-    const r = sig.r.toArrayLike(Buffer, "be", n);
-    const s = sig.s.toArrayLike(Buffer, "be", n);
-    return Buffer.concat([r, s]).toString("hex");
-  };
-
-  hashMsg = (msg) => {
-    const sha = new SHA3(256);
-    sha.update(Buffer.from(msg, "hex"));
-    return sha.digest();
   };
 
   sendTx = async ({ transaction, args, proposer, authorizations, payer }) => {

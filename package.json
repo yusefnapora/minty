@@ -17,11 +17,12 @@
   },
   "dependencies": {
     "@onflow/fcl": "^0.0.77",
-    "@onflow/util-encode-key": "^0.0.2",
+    "@onflow/util-encode-key": "0.0.2",
     "chalk": "^4.1.0",
     "cids": "^1.1.6",
     "commander": "^7.1.0",
     "concurrently": "^6.0.0",
+    "crypto": "^1.0.1",
     "csv-parse": "^4.16.3",
     "elliptic": "^6.5.4",
     "getconfig": "^4.5.0",

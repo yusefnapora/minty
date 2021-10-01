@@ -34,7 +34,10 @@ const config = {
 
   // Store IPFS NFT asset & metadata CIDs and data before pushing to the live network
   // https://github.com/rarepress/nebulus
-  nebulusPath: "../.nebulus"
+  nebulusPath: "../.nebulus",
+
+  nftDataPath: "../NFT-Datasheet.csv",
+  nftAssetPath: "../assets"
 };
 
 module.exports = config;

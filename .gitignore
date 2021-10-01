@@ -1,6 +1,7 @@
 .idea
 node_modules
 minty-deployment.json
+testnet-admin.json
 config/default.env
 .env
 
