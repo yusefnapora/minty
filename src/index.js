@@ -107,6 +107,15 @@ async function main() {
 
 async function batchCreateNFT(options) {
   const minty = await MakeMinty();
+
+  const answer = await inquirer.prompt({
+    type: "confirm",
+    name: "confirm",
+    message: `Create NFTs using data from ${path.basename(config.nftDataPath)}?`
+  });
+
+  if (!answer.confirm) return;
+
   const result = await minty.createNFTsFromCSVFile(options.data, (nft) => {
     alignOutput([
       ["Token ID:", chalk.green(nft.tokenId)],
