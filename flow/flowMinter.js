@@ -88,8 +88,6 @@ class FlowMinter {
   }
 
   async mint(recipient, metadata) {
-    console.log(metadata);
-
     const authorization = this.flowService.authorizeMinter();
 
     let transaction = await fs.readFile(

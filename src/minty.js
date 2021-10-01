@@ -14,6 +14,7 @@ const generateMetadata = require("../util/generate-metadata");
 // See https://www.npmjs.com/package/getconfig for info on how to override the default config for
 // different environments (e.g. testnet, mainnet, staging, production, etc).
 const config = require("getconfig");
+const { Console } = require("console");
 
 // ipfs.add parameters for more deterministic CIDs
 const ipfsAddOptions = {
@@ -269,32 +270,28 @@ class Minty {
       tokenId
     );
 
-    // const { metadata, metadataURI } = await this.getNFTMetadata(tokenId);
-    // const ownerAddress = await this.getTokenOwner(tokenId);
-    // const metadataGatewayURL = makeGatewayURL(metadataURI);
+    console.log(flowData.metadata);
 
-    // const nft = {
-    //   tokenId,
-    //   metadata,
-    //   metadataURI,
-    //   metadataGatewayURL,
-    //   ownerAddress
-    // };
+    const metadataURI = flowData.metadata;
+    const ownerAddress = flowData.owner;
+    const metadataGatewayURL = makeGatewayURL(metadataURI);
+    const metadataBytes = await this.nebulus.get(
+      stripIpfsUriPrefix(metadataURI)
+    );
+    const metadata = JSON.parse(metadataBytes.toString());
 
-    // const { fetchAsset, fetchCreationInfo } = opts || {};
-    // if (metadata.asset) {
-    //   nft.assetURI = metadata.asset;
-    //   nft.assetGatewayURL = makeGatewayURL(metadata.asset);
-    //   if (fetchAsset) {
-    //     nft.assetDataBase64 = await this.getIPFSBase64(metadata.asset);
-    //   }
-    // }
+    const nft = {
+      tokenId,
+      metadata,
+      metadataURI,
+      metadataGatewayURL,
+      ownerAddress
+    };
 
-    // if (fetchCreationInfo) {
-    //   nft.creationInfo = await this.getCreationInfo(tokenId);
-    // }
+    nft.assetURI = metadata.asset;
+    nft.assetGatewayURL = makeGatewayURL(metadata.asset);
     console.log(flowData);
-    return flowData;
+    return nft;
   }
 
   /**
@@ -324,7 +321,7 @@ class Minty {
    */
   async mintToken(ownerAddress, metadataURI) {
     // the smart contract adds an ipfs:// prefix to all URIs, so make sure it doesn't get added twice
-    metadataURI = stripIpfsUriPrefix(metadataURI);
+    // metadataURI = stripIpfsUriPrefix(metadataURI);
     await this.flowMinter.setupAccount();
     const minted = await this.flowMinter.mint(ownerAddress, metadataURI);
     return minted;

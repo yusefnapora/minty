@@ -1,0 +1,16 @@
+{
+  "txId": "015528c50945498696d22d08bb439597034aaf0e78a8b1a7af98d885b0c71d10",
+  "tokenId": 1,
+  "ownerAddress": "0xf8d6e0586b0a20c7",
+  "metadata": {
+    "name": "Another One",
+    "description": "Yet another tested NFT",
+    "meta-attr:1": "something",
+    "meta-attr:2": "ok",
+    "asset": "ipfs://bafybeia3rqmrwk53kcqgr5j727y5zkf6momgsq4jq6ipqmg7ab267am3by/test-asset.txt"
+  },
+  "assetURI": "ipfs://bafybeia3rqmrwk53kcqgr5j727y5zkf6momgsq4jq6ipqmg7ab267am3by/test-asset.txt",
+  "metadataURI": "ipfs://bafybeib4homcdhxro4fguvc72ermmuyupv5hbwktg7xozbnlfubljoc6wy/metadata.json",
+  "assetGatewayURL": "http://localhost:8081/ipfs/bafybeia3rqmrwk53kcqgr5j727y5zkf6momgsq4jq6ipqmg7ab267am3by/test-asset.txt",
+  "metadataGatewayURL": "http://localhost:8081/ipfs/bafybeib4homcdhxro4fguvc72ermmuyupv5hbwktg7xozbnlfubljoc6wy/metadata.json"
+}

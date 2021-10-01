@@ -49,11 +49,7 @@ async function main() {
 
   program
     .command("show <token-id>")
-    .description("get info about an NFT using its token ID")
-    .option(
-      "-c, --creation-info",
-      "include the creator address and block number the NFT was minted"
-    )
+    .description("get info from Flow about an NFT using its token ID")
     .action(getNFT);
 
   // program
@@ -152,13 +148,7 @@ async function getNFT(tokenId, options) {
     ["Token ID:", chalk.green(nft.tokenId)],
     ["Owner Address:", chalk.yellow(nft.ownerAddress)]
   ];
-  if (nft.creationInfo) {
-    output.push([
-      "Creator Address:",
-      chalk.yellow(nft.creationInfo.creatorAddress)
-    ]);
-    output.push(["Block Number:", nft.creationInfo.blockNumber]);
-  }
+
   output.push(["Metadata Address:", chalk.blue(nft.metadataURI)]);
   output.push(["Metadata Gateway URL:", chalk.blue(nft.metadataGatewayURL)]);
   output.push(["Asset Address:", chalk.blue(nft.assetURI)]);
