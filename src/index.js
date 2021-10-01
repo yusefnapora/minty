@@ -3,14 +3,13 @@
 // This file contains the main entry point for the command line `minty` app, and the command line option parsing code.
 // See minty.js for the core functionality.
 
-const fs = require("fs/promises");
 const path = require("path");
-const YAML = require("yaml");
 const { Command } = require("commander");
 const inquirer = require("inquirer");
 const chalk = require("chalk");
 const colorize = require("json-colorizer");
 const config = require("getconfig");
+const getParams = require("../util/get-params");
 const { MakeMinty } = require("./minty");
 const { deployContract } = require("./deploy");
 
@@ -24,14 +23,7 @@ const colorizeOptions = {
 
 async function main() {
   const program = new Command();
-
-  const paramsFile = await fs.readFile(
-    path.resolve(__dirname, "../params.yml"),
-    "utf8"
-  );
-
-  const params = YAML.parse(paramsFile);
-
+  const params = await getParams();
   // commands
   program
     .command("mint")
@@ -204,6 +196,7 @@ async function pinNFTData(tokenId) {
 async function deploy(options) {
   const filename = options.output;
   const info = await deployContract(options.name, options.symbol);
+  if (!info) return;
   console.log(filename, JSON.stringify(info, null, 2));
 }
 

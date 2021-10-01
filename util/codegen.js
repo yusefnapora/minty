@@ -1,6 +1,5 @@
 const fs = require("fs/promises");
 const path = require("path");
-const YAML = require("yaml");
 const Handlebars = require("handlebars");
 
 async function createContract(name) {

@@ -4,17 +4,14 @@ const FlowService = require("./flowService");
 const fs = require("fs/promises");
 const path = require("path");
 const config = require("getconfig");
-
-const nonFungibleTokenPath = '"../contracts/NonFungibleToken.cdc"';
-
-// TODO Get this dynamically from the minty-deployment.json...
-const nftContractPath = '"../contracts/CoolCats.cdc"';
-
+const getParams = require("../util/get-params");
 class FlowMinter {
   constructor() {
     this.flowService = null;
     this.nonFungibleTokenAddress = null;
     this.nftContractAddress = null;
+    this.nonFungibleTokenPath = null;
+    this.nftContractPath = null;
     this._initialized = false;
   }
 
@@ -22,6 +19,14 @@ class FlowMinter {
     if (this._initialized) {
       return;
     }
+
+    const params = await getParams();
+
+    // Not the filesystem path, the path to the contract
+    // as written in the cadence files. Used to do string
+    // replacement, path -> Flow address
+    this.nonFungibleTokenPath = '"../contracts/NonFungibleToken.cdc"';
+    this.nftContractPath = `"../contracts/${params.name}.cdc"`;
 
     this.flowService = new FlowService(
       config.adminFlowAccount,
@@ -45,10 +50,10 @@ class FlowMinter {
 
     transaction = transaction
       .replace(
-        nonFungibleTokenPath,
+        this.nonFungibleTokenPath,
         fcl.withPrefix(this.nonFungibleTokenAddress)
       )
-      .replace(nftContractPath, fcl.withPrefix(this.nftContractAddress));
+      .replace(this.nftContractPath, fcl.withPrefix(this.nftContractAddress));
 
     return this.flowService.sendTx({
       transaction,
@@ -71,10 +76,10 @@ class FlowMinter {
 
     transaction = transaction
       .replace(
-        nonFungibleTokenPath,
+        this.nonFungibleTokenPath,
         fcl.withPrefix(this.nonFungibleTokenAddress)
       )
-      .replace(nftContractPath, fcl.withPrefix(this.nftContractAddress));
+      .replace(this.nftContractPath, fcl.withPrefix(this.nftContractAddress));
 
     return this.flowService.sendTx({
       transaction,
@@ -95,10 +100,10 @@ class FlowMinter {
 
     transaction = transaction
       .replace(
-        nonFungibleTokenPath,
+        this.nonFungibleTokenPath,
         fcl.withPrefix(this.nonFungibleTokenAddress)
       )
-      .replace(nftContractPath, fcl.withPrefix(this.nftContractAddress));
+      .replace(this.nftContractPath, fcl.withPrefix(this.nftContractAddress));
 
     return this.flowService.sendTx({
       transaction,

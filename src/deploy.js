@@ -13,10 +13,11 @@ fcl.config().put("accessNode.api", config.flowHTTPEndpoint);
 
 async function deployContract(name, symbol) {
   const deploymentInfo = deploymentInfoFormatter(name);
+  const go = await saveDeploymentInfo(deploymentInfo);
+  if (!go) return;
   await createContract(name);
   await createSetupTX(name);
   await createMintTX(name);
-  await saveDeploymentInfo(deploymentInfo);
   await flowCliProjectDeployer();
   return deploymentInfo;
 }

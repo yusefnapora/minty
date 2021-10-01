@@ -1,6 +1,6 @@
 import NonFungibleToken from "./NonFungibleToken.cdc"
 
-pub contract CoolCats: NonFungibleToken {
+pub contract McMoments: NonFungibleToken {
 
     // Events
     //
@@ -16,7 +16,7 @@ pub contract CoolCats: NonFungibleToken {
     pub let MinterStoragePath: StoragePath
 
     // totalSupply
-    // The total number of CoolCats that have been minted
+    // The total number of McMoments that have been minted
     //
     pub var totalSupply: UInt64
 
@@ -33,19 +33,19 @@ pub contract CoolCats: NonFungibleToken {
         }
     }
 
-    pub resource interface CoolCatsCollectionPublic {
+    pub resource interface McMomentsCollectionPublic {
         pub fun deposit(token: @NonFungibleToken.NFT)
         pub fun getIDs(): [UInt64]
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
-        pub fun borrowCoolCats(id: UInt64): &CoolCats.NFT? {
+        pub fun borrowMcMoments(id: UInt64): &McMoments.NFT? {
             post {
                 (result == nil) || (result?.id == id):
-                    "Cannot borrow CoolCats reference: The ID of the returned reference is incorrect"
+                    "Cannot borrow McMoments reference: The ID of the returned reference is incorrect"
             }
         }
     }
 
-    pub resource Collection: CoolCatsCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
+    pub resource Collection: McMomentsCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
         
         // dictionary of NFTs
         // NFT is a resource type with an `UInt64` ID field
@@ -68,7 +68,7 @@ pub contract CoolCats: NonFungibleToken {
         // and adds the ID to the id array
         //
         pub fun deposit(token: @NonFungibleToken.NFT) {
-            let token <- token as! @CoolCats.NFT
+            let token <- token as! @McMoments.NFT
 
             let id: UInt64 = token.id
 
@@ -95,15 +95,15 @@ pub contract CoolCats: NonFungibleToken {
             return &self.ownedNFTs[id] as &NonFungibleToken.NFT
         }
 
-        // borrowCoolCats
-        // Gets a reference to an NFT in the collection as a CoolCats,
+        // borrowMcMoments
+        // Gets a reference to an NFT in the collection as a McMoments,
         // exposing all of its fields (including the typeID).
         // This is safe as there are no functions that can be called on the KittyItem.
         //
-        pub fun borrowCoolCats(id: UInt64): &CoolCats.NFT? {
+        pub fun borrowMcMoments(id: UInt64): &McMoments.NFT? {
             if self.ownedNFTs[id] != nil {
                 let ref = &self.ownedNFTs[id] as auth &NonFungibleToken.NFT
-                return ref as! &CoolCats.NFT
+                return ref as! &McMoments.NFT
             } else {
                 return nil
             }
@@ -139,38 +139,38 @@ pub contract CoolCats: NonFungibleToken {
 		// and deposit it in the recipients collection using their collection reference
         //
 		pub fun mintNFT(recipient: &{NonFungibleToken.CollectionPublic}, metadata: String) {
-            emit Minted(id: CoolCats.totalSupply)
+            emit Minted(id: McMoments.totalSupply)
 
 			// deposit it in the recipient's account using their reference
-			recipient.deposit(token: <-create CoolCats.NFT(id: CoolCats.totalSupply, metadata: metadata))
+			recipient.deposit(token: <-create McMoments.NFT(id: McMoments.totalSupply, metadata: metadata))
 
-            CoolCats.totalSupply = CoolCats.totalSupply + (1 as UInt64)
+            McMoments.totalSupply = McMoments.totalSupply + (1 as UInt64)
 		}
 	}
 
     // fetch
-    // Get a reference to a CoolCats from an account's Collection, if available.
-    // If an account does not have a CoolCats.Collection, panic.
+    // Get a reference to a McMoments from an account's Collection, if available.
+    // If an account does not have a McMoments.Collection, panic.
     // If it has a collection but does not contain the itemID, return nil.
     // If it has a collection and that collection contains the itemID, return a reference to that.
     //
-    pub fun fetch(_ from: Address, itemID: UInt64): &CoolCats.NFT? {
+    pub fun fetch(_ from: Address, itemID: UInt64): &McMoments.NFT? {
         let collection = getAccount(from)
-            .getCapability(CoolCats.CollectionPublicPath)!
-            .borrow<&{ CoolCats.CoolCatsCollectionPublic }>()
+            .getCapability(McMoments.CollectionPublicPath)!
+            .borrow<&{ McMoments.McMomentsCollectionPublic }>()
             ?? panic("Couldn't get collection")
-        // We trust CoolCats.Collection.borowCoolCats to get the correct itemID
+        // We trust McMoments.Collection.borowMcMoments to get the correct itemID
         // (it checks it before returning it).
-        return collection.borrowCoolCats(id: itemID)
+        return collection.borrowMcMoments(id: itemID)
     }
 
     // initializer
     //
 	init() {
         // Set our named paths
-        self.CollectionStoragePath = /storage/CoolCatsCollection
-        self.CollectionPublicPath = /public/CoolCatsCollection
-        self.MinterStoragePath = /storage/CoolCatsMinter
+        self.CollectionStoragePath = /storage/McMomentsCollection
+        self.CollectionPublicPath = /public/McMomentsCollection
+        self.MinterStoragePath = /storage/McMomentsMinter
 
         // Initialize the total supply
         self.totalSupply = 0
