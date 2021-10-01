@@ -11,7 +11,7 @@ class FlowService {
     this.minterAccountIndex = minterAccountIndex;
   }
 
-  authorizeMinter = () => {
+  authorizeMinter() {
     return async (account = {}) => {
       const user = await this.getAccount(this.minterFlowAddress);
       const key = user.keys[this.minterAccountIndex];
@@ -41,7 +41,7 @@ class FlowService {
         }
       };
     };
-  };
+  }
 
   // createAccount = async (publicKey, sigAlgo, hashAlgo, authorization) => {
   //   const encodedPublicKey = encodeKey(publicKey, sigAlgo, hashAlgo, 1000);

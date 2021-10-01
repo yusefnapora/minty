@@ -40,7 +40,7 @@ class FlowMinter {
     this._initialized = true;
   }
 
-  setupAccount = async () => {
+  async setupAccount() {
     const authorization = this.flowService.authorizeMinter();
 
     let transaction = await fs.readFile(
@@ -62,7 +62,7 @@ class FlowMinter {
       payer: authorization,
       proposer: authorization
     });
-  };
+  }
 
   mint = async (recipient, metadata) => {
     console.log(metadata);
