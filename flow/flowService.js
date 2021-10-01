@@ -76,12 +76,12 @@ class FlowService {
   //   };
   // };
 
-  getAccount = async (addr) => {
+  async getAccount(addr) {
     const { account } = await fcl.send([fcl.getAccount(addr)]);
     return account;
-  };
+  }
 
-  sendTx = async ({ transaction, args, proposer, authorizations, payer }) => {
+  async sendTx({ transaction, args, proposer, authorizations, payer }) {
     const response = await fcl.send([
       fcl.transaction`
         ${transaction}
@@ -93,7 +93,7 @@ class FlowService {
       fcl.limit(9999)
     ]);
     return await fcl.tx(response).onceSealed();
-  };
+  }
 
   async executeScript({ script, args }) {
     const response = await fcl.send([fcl.script`${script}`, fcl.args(args)]);

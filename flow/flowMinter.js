@@ -64,7 +64,7 @@ class FlowMinter {
     });
   }
 
-  mint = async (recipient, metadata) => {
+  async mint(recipient, metadata) {
     console.log(metadata);
 
     const authorization = this.flowService.authorizeMinter();
@@ -88,9 +88,9 @@ class FlowMinter {
       payer: authorization,
       proposer: authorization
     });
-  };
+  }
 
-  transfer = async (recipient, itemID) => {
+  async transfer(recipient, itemID) {
     const authorization = this.flowService.authorizeMinter();
 
     let transaction = await fs.readFile(
@@ -112,7 +112,7 @@ class FlowMinter {
       payer: authorization,
       proposer: authorization
     });
-  };
+  }
 }
 
 module.exports = FlowMinter;
