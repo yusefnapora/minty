@@ -4,9 +4,7 @@ const CID = require("cids");
 const { uid } = require("@onflow/util-uid");
 const { NFTStorage, Blob } = require("nft.storage");
 const Nebulus = require("nebulus");
-const all = require("it-all");
-const uint8ArrayConcat = require("uint8arrays/concat");
-const uint8ArrayToString = require("uint8arrays/to-string");
+const ora = require("ora");
 const { loadDeploymentInfo } = require("./deploy");
 const FlowMinter = require("../flow/flowMinter");
 const generateMetadata = require("../util/generate-metadata");
@@ -14,7 +12,6 @@ const generateMetadata = require("../util/generate-metadata");
 // See https://www.npmjs.com/package/getconfig for info on how to override the default config for
 // different environments (e.g. testnet, mainnet, staging, production, etc).
 const config = require("getconfig");
-
 /**
  * Construct and asynchronously initialize a new Minty instance.
  * @returns {Promise<Minty>} a new instance of Minty, ready to mint NFTs.
@@ -373,11 +370,14 @@ class Minty {
         );
         return await this.ipfs.storeBlob(new Blob([data]));
       };
+      const spinner = ora();
 
+      spinner.start("Pinning metadata...");
       const meta = await pin(stripIpfsUriPrefix(metadataURI));
-      console.log(`📌 ${meta} was pinned!`);
+      spinner.succeed(`📌 ${meta} was pinned!`);
+      spinner.start("Pinning asset...");
       const asset = await pin(stripIpfsUriPrefix(assetURI));
-      console.log(`📌 ${asset} was pinned!`);
+      spinner.succeed(`📌 ${asset} was pinned!`);
 
       resolve();
     });
