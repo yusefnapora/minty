@@ -1,0 +1,16 @@
+{
+  "txId": "1a26cb8a51bf9976c063df7a392061e7438b9837f94905be0ab6d19140400376",
+  "tokenId": 8,
+  "ownerAddress": "0xf8d6e0586b0a20c7",
+  "metadata": {
+    "name": "Testy McTest",
+    "description": "A tested NFT",
+    "meta-attr:1": "textfile",
+    "meta-attr:2": "winning",
+    "asset": "ipfs://bafybeia3rqmrwk53kcqgr5j727y5zkf6momgsq4jq6ipqmg7ab267am3by"
+  },
+  "assetURI": "ipfs://bafybeia3rqmrwk53kcqgr5j727y5zkf6momgsq4jq6ipqmg7ab267am3by",
+  "metadataURI": "ipfs://bafybeihnugztgosv44esru2n2hn7qxi5zg65vieizka5f4lfvgdlmg24fq",
+  "assetGatewayURL": "http://localhost:8081/ipfs/bafybeia3rqmrwk53kcqgr5j727y5zkf6momgsq4jq6ipqmg7ab267am3by",
+  "metadataGatewayURL": "http://localhost:8081/ipfs/bafybeihnugztgosv44esru2n2hn7qxi5zg65vieizka5f4lfvgdlmg24fq"
+}

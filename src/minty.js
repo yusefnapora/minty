@@ -2,7 +2,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const CID = require("cids");
 const { uid } = require("@onflow/util-uid");
-// const ipfsClient = require("ipfs-http-client");
+const { NFTStorage, Blob } = require("nft.storage");
 const Nebulus = require("nebulus");
 const all = require("it-all");
 const uint8ArrayConcat = require("uint8arrays/concat");
@@ -14,13 +14,6 @@ const generateMetadata = require("../util/generate-metadata");
 // See https://www.npmjs.com/package/getconfig for info on how to override the default config for
 // different environments (e.g. testnet, mainnet, staging, production, etc).
 const config = require("getconfig");
-const { Console } = require("console");
-
-// ipfs.add parameters for more deterministic CIDs
-const ipfsAddOptions = {
-  cidVersion: 1,
-  hashAlg: "sha2-256"
-};
 
 /**
  * Construct and asynchronously initialize a new Minty instance.
@@ -66,11 +59,11 @@ class Minty {
     this.deployInfo = await loadDeploymentInfo();
     this.flowMinter = await MakeFlowMinter();
 
-    // create a local IPFS node
-    // this.ipfs = ipfsClient(config.ipfsApiUrl);
     this.nebulus = new Nebulus({
       path: path.resolve(__dirname, config.nebulusPath)
     });
+
+    this.ipfs = new NFTStorage({ token: config.pinningService.key });
 
     this.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -139,25 +132,20 @@ class Minty {
     // 'ipfs://QmaNZ2FCgvBPqnxtkbToVVbK2Nes6xk5K4Ns6BsmkPucAM'
 
     // add the asset to IPFS
-    const assetCid = await this.nebulus.folder({
-      [basename]: await this.nebulus.add(
-        path.resolve(__dirname, "../" + filePath)
-      )
-    });
+    const assetCid = await this.nebulus.add(
+      path.resolve(__dirname, "../" + filePath)
+    );
 
-    const assetURI = ensureIpfsUriPrefix(assetCid) + "/" + basename;
+    const assetURI = ensureIpfsUriPrefix(assetCid);
     const metadata = await this.makeNFTMetadata(assetURI, options);
 
     // add the metadata to IPFS
-    const metadataCid = await this.nebulus.folder({
-      "metadata.json": await this.nebulus.add(
-        Buffer.from(JSON.stringify(metadata))
-      )
-    });
+    const metadataCid = await this.nebulus.add(
+      Buffer.from(JSON.stringify(metadata))
+    );
 
     // make the NFT metadata JSON
-    const metadataURI = ensureIpfsUriPrefix(metadataCid) + "/metadata.json";
-
+    const metadataURI = ensureIpfsUriPrefix(metadataCid);
     // Get the address of the token owner from options, or use the default signing address if no owner is given
     let ownerAddress = options.owner;
     if (!ownerAddress) {
@@ -270,15 +258,11 @@ class Minty {
       tokenId
     );
 
-    console.log(flowData.metadata);
-
     const metadataURI = flowData.metadata;
     const ownerAddress = flowData.owner;
     const metadataGatewayURL = makeGatewayURL(metadataURI);
-    const metadataBytes = await this.nebulus.get(
-      stripIpfsUriPrefix(metadataURI)
-    );
-    const metadata = JSON.parse(metadataBytes.toString());
+
+    const metadata = await this.getIPFSJSON(metadataURI);
 
     const nft = {
       tokenId,
@@ -290,7 +274,7 @@ class Minty {
 
     nft.assetURI = metadata.asset;
     nft.assetGatewayURL = makeGatewayURL(metadata.asset);
-    console.log(flowData);
+
     return nft;
   }
 
@@ -298,11 +282,16 @@ class Minty {
    * Fetch the NFT metadata for a given token id.
    *
    * @param tokenId - the id of an existing token
-   * @returns {Promise<{metadata: object, metadataURI: string}>} - resolves to an object containing the metadata and
+   * @returns {Promise<{metadata: object, metadataURI: string, local: boolean}>} - resolves to an object containing the metadata and
    * metadata URI. Fails if the token does not exist, or if fetching the data fails.
    */
   async getNFTMetadata(tokenId) {
-    const metadataURI = await this.contract.tokenURI(tokenId);
+    const flowData = await this.flowMinter.getNFTDetails(
+      config.adminFlowAccount,
+      tokenId
+    );
+
+    const metadataURI = flowData.metadata;
     const metadata = await this.getIPFSJSON(metadataURI);
 
     return { metadata, metadataURI };
@@ -380,7 +369,8 @@ class Minty {
    */
   async getIPFS(cidOrURI) {
     const cid = stripIpfsUriPrefix(cidOrURI);
-    return uint8ArrayConcat(await all(this.ipfs.cat(cid)));
+    const result = await this.ipfs.cat(cid);
+    return uint8ArrayConcat(await all(result));
   }
 
   /**
@@ -412,8 +402,14 @@ class Minty {
    * @returns {Promise<string>} - contents of the IPFS object, as a javascript object (or array, etc depending on what was stored). Fails if the content isn't valid JSON.
    */
   async getIPFSJSON(cidOrURI) {
-    const str = await this.getIPFSString(cidOrURI);
-    return JSON.parse(str);
+    const metadataBytes = await this.nebulus.get(stripIpfsUriPrefix(cidOrURI));
+    const metadata = JSON.parse(metadataBytes.toString());
+    return metadata;
+  }
+
+  async getIPFSJSONBytes(cidOrURI) {
+    const metadataBytes = await this.nebulus.get(stripIpfsUriPrefix(cidOrURI));
+    return metadataBytes;
   }
 
   //////////////////////////////////////////////
@@ -424,20 +420,47 @@ class Minty {
    * Pins all IPFS data associated with the given tokend id to the remote pinning service.
    *
    * @param {string} tokenId - the ID of an NFT that was previously minted.
-   * @returns {Promise<{assetURI: string, metadataURI: string}>} - the IPFS asset and metadata uris that were pinned.
+   * @returns {ObservableLike<{assetURI: string, metadataURI: string}>} - the IPFS asset and metadata uris that were pinned.
    * Fails if no token with the given id exists, or if pinning fails.
    */
+
   async pinTokenData(tokenId) {
-    const { metadata, metadataURI } = await this.getNFTMetadata(tokenId);
-    const { image: assetURI } = metadata;
+    return new Promise(async (resolve, reject) => {
+      await this.nebulus.connect();
 
-    console.log(`Pinning asset data (${assetURI}) for token id ${tokenId}....`);
-    await this.pin(assetURI);
+      const update = async (cid) => {
+        const result = await pin(cid);
+        console.log(result);
+        console.log(`${cid} was pinned!`);
+      };
 
-    console.log(`Pinning metadata (${metadataURI}) for token id ${tokenId}...`);
-    await this.pin(metadataURI);
+      const { metadata, metadataURI } = await this.getNFTMetadata(tokenId);
+      const { asset: assetURI } = metadata;
+      const { asset, ...payload } = metadata;
 
-    return { assetURI, metadataURI };
+      const pin = async (cid) => {
+        const data = await fs.readFile(
+          path.resolve(__dirname, `../ipfs-data/ipfs/${cid}`),
+          "utf8"
+        );
+        console.log(">>>>>>>", data, "<<<<<<<<<<<<<<", cid);
+        return await this.ipfs.storeBlob(new Blob([data]));
+      };
+
+      this.nebulus.push(stripIpfsUriPrefix(metadataURI));
+      this.nebulus.push(stripIpfsUriPrefix(assetURI));
+      this.nebulus.on(`push`, update);
+    });
+
+    // console.log(
+    //   `Pinning asset data (${assetURI}) for token id ${tokenId}....`
+    // );
+    //
+
+    // console.log(
+    //   `Pinning metadata (${metadataURI}) for token id ${tokenId}...`
+    // );
+    // await this.pin(metadataURI);
   }
 
   /**
@@ -448,13 +471,12 @@ class Minty {
    */
   async pin(cidOrURI) {
     const cid = extractCID(cidOrURI);
-
     // Make sure IPFS is set up to use our preferred pinning service.
     await this._configurePinningService();
-
     // Check if we've already pinned this CID to avoid a "duplicate pin" error.
     const pinned = await this.isPinned(cid);
     if (pinned) {
+      console.log("Asset has already been pinned...");
       return;
     }
 
@@ -464,6 +486,8 @@ class Minty {
     await this.ipfs.pin.remote.add(cid, {
       service: config.pinningService.name
     });
+
+    console.log("CMOOOONNNNNNNNN");
   }
 
   /**
