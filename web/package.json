@@ -8,6 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@onflow/fcl": "0.0.77",
+    "@onflow/types": "0.0.5",
     "next": "11.1.2",
     "next-seo": "^4.28.1",
     "react": "17.0.2",
