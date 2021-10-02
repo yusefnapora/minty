@@ -12,11 +12,10 @@ if [ ! ! command -v flow &> /dev/null ]; then
   exit;
 fi
 
-echo "Running IPFS and Flow emulator"
+echo "Flow emulator"
 
 run_emulator_cmd="flow emulator --http-port 8888 "
-run_ipfs_cmd="echo OK"
 
-npx concurrently -n flow,ipfs -c yellow,blue "$run_emulator_cmd" "$run_ipfs_cmd" 
+npx concurrently -n "flow emulator" -c green "$run_emulator_cmd" 
 
 

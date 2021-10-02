@@ -127,10 +127,6 @@ class Minty {
     const filePath = options.path || "asset.bin";
     const basename = path.basename(filePath);
 
-    // Using 'folder' gives us URIs with descriptive filenames in them e.g.
-    // 'ipfs://QmaNZ2FCgvBPqnxtkbToVVbK2Nes6xk5K4Ns6BsmkPucAM/cat-pic.png' instead of
-    // 'ipfs://QmaNZ2FCgvBPqnxtkbToVVbK2Nes6xk5K4Ns6BsmkPucAM'
-
     // add the asset to IPFS
     const assetCid = await this.nebulus.add(
       path.resolve(__dirname, "../" + filePath)
@@ -337,63 +333,9 @@ class Minty {
     return; // TODO
   }
 
-  /**
-   * Get historical information about the token.
-   *
-   * @param {string} tokenId - the id of an existing token
-   *
-   * @typedef {object} NFTCreationInfo
-   * @property {number} blockNumber - the block height at which the token was minted
-   * @property {string} creatorAddress - the Flow address of the token's initial owner
-   *
-   * @returns {Promise<NFTCreationInfo>}
-   */
-  async getCreationInfo(tokenId) {
-    let blockNumber, creatorAddress;
-    // TODO
-    return {
-      blockNumber,
-      creatorAddress
-    };
-  }
-
   //////////////////////////////////////////////
   // --------- IPFS helpers
   //////////////////////////////////////////////
-
-  /**
-   * Get the full contents of the IPFS object identified by the given CID or URI.
-   *
-   * @param {string} cidOrURI - IPFS CID string or `ipfs://<cid>` style URI
-   * @returns {Promise<Uint8Array>} - contents of the IPFS object
-   */
-  async getIPFS(cidOrURI) {
-    const cid = stripIpfsUriPrefix(cidOrURI);
-    const result = await this.ipfs.cat(cid);
-    return uint8ArrayConcat(await all(result));
-  }
-
-  /**
-   * Get the contents of the IPFS object identified by the given CID or URI, and return it as a string.
-   *
-   * @param {string} cidOrURI - IPFS CID string or `ipfs://<cid>` style URI
-   * @returns {Promise<string>} - the contents of the IPFS object as a string
-   */
-  async getIPFSString(cidOrURI) {
-    const bytes = await this.getIPFS(cidOrURI);
-    return uint8ArrayToString(bytes);
-  }
-
-  /**
-   * Get the full contents of the IPFS object identified by the given CID or URI, and return it as a base64 encoded string.
-   *
-   * @param {string} cidOrURI - IPFS CID string or `ipfs://<cid>` style URI
-   * @returns {Promise<string>} - contents of the IPFS object, encoded to base64
-   */
-  async getIPFSBase64(cidOrURI) {
-    const bytes = await this.getIPFS(cidOrURI);
-    return uint8ArrayToString(bytes, "base64");
-  }
 
   /**
    * Get the contents of the IPFS object identified by the given CID or URI, and parse it as JSON, returning the parsed object.
@@ -405,11 +347,6 @@ class Minty {
     const metadataBytes = await this.nebulus.get(stripIpfsUriPrefix(cidOrURI));
     const metadata = JSON.parse(metadataBytes.toString());
     return metadata;
-  }
-
-  async getIPFSJSONBytes(cidOrURI) {
-    const metadataBytes = await this.nebulus.get(stripIpfsUriPrefix(cidOrURI));
-    return metadataBytes;
   }
 
   //////////////////////////////////////////////
@@ -426,132 +363,25 @@ class Minty {
 
   async pinTokenData(tokenId) {
     return new Promise(async (resolve, reject) => {
-      await this.nebulus.connect();
-
-      const update = async (cid) => {
-        const result = await pin(cid);
-        console.log(result);
-        console.log(`${cid} was pinned!`);
-      };
-
       const { metadata, metadataURI } = await this.getNFTMetadata(tokenId);
       const { asset: assetURI } = metadata;
-      const { asset, ...payload } = metadata;
 
       const pin = async (cid) => {
         const data = await fs.readFile(
           path.resolve(__dirname, `../ipfs-data/ipfs/${cid}`),
           "utf8"
         );
-        console.log(">>>>>>>", data, "<<<<<<<<<<<<<<", cid);
         return await this.ipfs.storeBlob(new Blob([data]));
       };
 
-      this.nebulus.push(stripIpfsUriPrefix(metadataURI));
-      this.nebulus.push(stripIpfsUriPrefix(assetURI));
-      this.nebulus.on(`push`, update);
+      const meta = await pin(stripIpfsUriPrefix(metadataURI));
+      console.log(`📌 ${meta} was pinned!`);
+      const asset = await pin(stripIpfsUriPrefix(assetURI));
+      console.log(`📌 ${asset} was pinned!`);
+
+      resolve();
     });
-
-    // console.log(
-    //   `Pinning asset data (${assetURI}) for token id ${tokenId}....`
-    // );
-    //
-
-    // console.log(
-    //   `Pinning metadata (${metadataURI}) for token id ${tokenId}...`
-    // );
-    // await this.pin(metadataURI);
   }
-
-  /**
-   * Request that the remote pinning service pin the given CID or ipfs URI.
-   *
-   * @param {string} cidOrURI - a CID or ipfs:// URI
-   * @returns {Promise<void>}
-   */
-  async pin(cidOrURI) {
-    const cid = extractCID(cidOrURI);
-    // Make sure IPFS is set up to use our preferred pinning service.
-    await this._configurePinningService();
-    // Check if we've already pinned this CID to avoid a "duplicate pin" error.
-    const pinned = await this.isPinned(cid);
-    if (pinned) {
-      console.log("Asset has already been pinned...");
-      return;
-    }
-
-    // Ask the remote service to pin the content.
-    // Behind the scenes, this will cause the pinning service to connect to our local IPFS node
-    // and fetch the data using Bitswap, IPFS's transfer protocol.
-    await this.ipfs.pin.remote.add(cid, {
-      service: config.pinningService.name
-    });
-
-    console.log("CMOOOONNNNNNNNN");
-  }
-
-  /**
-   * Check if a cid is already pinned.
-   *
-   * @param {string|CID} cid
-   * @returns {Promise<boolean>} - true if the pinning service has already pinned the given cid
-   */
-  async isPinned(cid) {
-    if (typeof cid === "string") {
-      cid = new CID(cid);
-    }
-
-    const opts = {
-      service: config.pinningService.name,
-      cid: [cid] // ls expects an array of cids
-    };
-    for await (const result of this.ipfs.pin.remote.ls(opts)) {
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Configure IPFS to use the remote pinning service from our config.
-   *
-   * @private
-   */
-  async _configurePinningService() {
-    if (!config.pinningService) {
-      throw new Error(
-        `No pinningService set up in minty config. Unable to pin.`
-      );
-    }
-
-    // check if the service has already been added to js-ipfs
-    for (const svc of await this.ipfs.pin.remote.service.ls()) {
-      if (svc.service === config.pinningService.name) {
-        // service is already configured, no need to do anything
-        return;
-      }
-    }
-
-    // add the service to IPFS
-    const { name, endpoint, key } = config.pinningService;
-    if (!name) {
-      throw new Error("No name configured for pinning service");
-    }
-    if (!endpoint) {
-      throw new Error(`No endpoint configured for pinning service ${name}`);
-    }
-    if (!key) {
-      throw new Error(
-        `No key configured for pinning service ${name}.` +
-          `If the config references an environment variable, e.g. '$$PINATA_API_TOKEN', ` +
-          `make sure that the variable is defined.`
-      );
-    }
-    await this.ipfs.pin.remote.service.add(name, { endpoint, key });
-  }
-
-  //////////////////////////////////////////////
-  // -------- Metadata
-  //////////////////////////////////////////////
 }
 
 //////////////////////////////////////////////

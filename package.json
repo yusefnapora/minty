@@ -31,7 +31,6 @@
     "go-ipfs": "^0.8.0",
     "handlebars": "^4.7.7",
     "inquirer": "^8.0.0",
-    "ipfs-http-client": "^49.0.4",
     "it-all": "^1.0.5",
     "json-colorizer": "^2.2.2",
     "multiaddr": "^8.1.2",
