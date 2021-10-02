@@ -1,6 +1,6 @@
 import NonFungibleToken from "./NonFungibleToken.cdc"
 
-pub contract {{ name }}: NonFungibleToken {
+pub contract NextToken: NonFungibleToken {
 
     // Events
     //
@@ -16,7 +16,7 @@ pub contract {{ name }}: NonFungibleToken {
     pub let MinterStoragePath: StoragePath
 
     // totalSupply
-    // The total number of {{ name }} that have been minted
+    // The total number of NextToken that have been minted
     //
     pub var totalSupply: UInt64
 
@@ -33,19 +33,19 @@ pub contract {{ name }}: NonFungibleToken {
         }
     }
 
-    pub resource interface {{ name }}CollectionPublic {
+    pub resource interface NextTokenCollectionPublic {
         pub fun deposit(token: @NonFungibleToken.NFT)
         pub fun getIDs(): [UInt64]
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
-        pub fun borrow{{ name }}(id: UInt64): &{{ name }}.NFT? {
+        pub fun borrowNextToken(id: UInt64): &NextToken.NFT? {
             post {
                 (result == nil) || (result?.id == id):
-                    "Cannot borrow {{ name }} reference: The ID of the returned reference is incorrect"
+                    "Cannot borrow NextToken reference: The ID of the returned reference is incorrect"
             }
         }
     }
 
-    pub resource Collection: {{ name }}CollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
+    pub resource Collection: NextTokenCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
         
         // dictionary of NFTs
         // NFT is a resource type with an `UInt64` ID field
@@ -68,7 +68,7 @@ pub contract {{ name }}: NonFungibleToken {
         // and adds the ID to the id array
         //
         pub fun deposit(token: @NonFungibleToken.NFT) {
-            let token <- token as! @{{ name }}.NFT
+            let token <- token as! @NextToken.NFT
 
             let id: UInt64 = token.id
 
@@ -95,15 +95,15 @@ pub contract {{ name }}: NonFungibleToken {
             return &self.ownedNFTs[id] as &NonFungibleToken.NFT
         }
 
-        // borrow{{ name }}
-        // Gets a reference to an NFT in the collection as a {{ name }},
+        // borrowNextToken
+        // Gets a reference to an NFT in the collection as a NextToken,
         // exposing all of its fields (including the typeID).
         // This is safe as there are no functions that can be called on the KittyItem.
         //
-        pub fun borrow{{ name }}(id: UInt64): &{{ name }}.NFT? {
+        pub fun borrowNextToken(id: UInt64): &NextToken.NFT? {
             if self.ownedNFTs[id] != nil {
                 let ref = &self.ownedNFTs[id] as auth &NonFungibleToken.NFT
-                return ref as! &{{ name }}.NFT
+                return ref as! &NextToken.NFT
             } else {
                 return nil
             }
@@ -139,38 +139,38 @@ pub contract {{ name }}: NonFungibleToken {
 		// and deposit it in the recipients collection using their collection reference
         //
 		pub fun mintNFT(recipient: &{NonFungibleToken.CollectionPublic}, metadata: String) {
-            emit Minted(id: {{ name }}.totalSupply)
+            emit Minted(id: NextToken.totalSupply)
 
 			// deposit it in the recipient's account using their reference
-			recipient.deposit(token: <-create {{ name }}.NFT(id: {{ name }}.totalSupply, metadata: metadata, price: UInt64))
+			recipient.deposit(token: <-create NextToken.NFT(id: NextToken.totalSupply, metadata: metadata))
 
-            {{ name }}.totalSupply = {{ name }}.totalSupply + (1 as UInt64)
+            NextToken.totalSupply = NextToken.totalSupply + (1 as UInt64)
 		}
 	}
 
     // fetch
-    // Get a reference to a {{ name }} from an account's Collection, if available.
-    // If an account does not have a {{ name }}.Collection, panic.
+    // Get a reference to a NextToken from an account's Collection, if available.
+    // If an account does not have a NextToken.Collection, panic.
     // If it has a collection but does not contain the itemID, return nil.
     // If it has a collection and that collection contains the itemID, return a reference to that.
     //
-    pub fun fetch(_ from: Address, itemID: UInt64): &{{ name }}.NFT? {
+    pub fun fetch(_ from: Address, itemID: UInt64): &NextToken.NFT? {
         let collection = getAccount(from)
-            .getCapability({{ name }}.CollectionPublicPath)!
-            .borrow<&{ {{ name }}.{{ name }}CollectionPublic }>()
+            .getCapability(NextToken.CollectionPublicPath)!
+            .borrow<&{ NextToken.NextTokenCollectionPublic }>()
             ?? panic("Couldn't get collection")
-        // We trust {{ name }}.Collection.borow{{ name }} to get the correct itemID
+        // We trust NextToken.Collection.borowNextToken to get the correct itemID
         // (it checks it before returning it).
-        return collection.borrow{{ name }}(id: itemID)
+        return collection.borrowNextToken(id: itemID)
     }
 
     // initializer
     //
 	init() {
         // Set our named paths
-        self.CollectionStoragePath = /storage/{{ name }}Collection
-        self.CollectionPublicPath = /public/{{ name }}Collection
-        self.MinterStoragePath = /storage/{{ name }}Minter
+        self.CollectionStoragePath = /storage/NextTokenCollection
+        self.CollectionPublicPath = /public/NextTokenCollection
+        self.MinterStoragePath = /storage/NextTokenMinter
 
         // Initialize the total supply
         self.totalSupply = 0
