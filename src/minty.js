@@ -49,9 +49,7 @@ class Minty {
     if (this._initialized) {
       return;
     }
-
-    // The Minty object expects that the contract has already been deployed, with
-    // details written to a deployment info file. The default location is `./minty-deployment.json`,
+    // Deployment details written to a deployment info file. The default location is `./minty-deployment.json`,
     // in the config.
     this.deployInfo = await loadDeploymentInfo();
     this.flowMinter = await MakeFlowMinter();
@@ -65,6 +63,14 @@ class Minty {
     this.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     this._initialized = true;
+  }
+
+  //////////////////////////////////////////////
+  // ------ Deployment
+  //////////////////////////////////////////////
+
+  async deployContracts() {
+    await this.flowMinter.deployContracts();
   }
 
   //////////////////////////////////////////////

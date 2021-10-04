@@ -11,7 +11,7 @@ const colorize = require("json-colorizer");
 const config = require("getconfig");
 const { getParams, updateParams } = require("../util/params-helpers");
 const { MakeMinty } = require("./minty");
-const { deployContract } = require("./deploy");
+const { generateCode } = require("./deploy");
 
 const colorizeOptions = {
   pretty: true,
@@ -175,10 +175,12 @@ async function pinNFTData(tokenId) {
 }
 
 async function deploy(options) {
+  const minty = await MakeMinty();
   const filename = options.output;
   await updateParams(options.name, options.symbol);
-  const info = await deployContract(options.name, options.symbol);
+  const info = await generateCode(options.name, options.symbol);
   if (!info) return;
+  const result = await minty.deployContracts();
   console.log(filename, JSON.stringify(info, null, 2));
 }
 

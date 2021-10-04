@@ -8,11 +8,11 @@ const {
   createMintTX,
   createReadScript
 } = require("../util/codegen");
-const { flowCliProjectDeployer } = require("../util/flow-cli-wrapper");
+
 const fcl = require("@onflow/fcl");
 fcl.config().put("accessNode.api", config.flowHTTPEndpoint);
 
-async function deployContract(name, symbol) {
+async function generateCode(name, symbol) {
   const deploymentInfo = deploymentInfoFormatter(name);
   const go = await saveDeploymentInfo(deploymentInfo);
   if (!go) return;
@@ -20,7 +20,6 @@ async function deployContract(name, symbol) {
   await createSetupTX(name);
   await createMintTX(name);
   await createReadScript(name);
-  await flowCliProjectDeployer();
   return deploymentInfo;
 }
 
@@ -135,7 +134,7 @@ async function confirmOverwrite(filename) {
 }
 
 module.exports = {
-  deployContract,
+  generateCode,
   loadDeploymentInfo,
   saveDeploymentInfo
 };

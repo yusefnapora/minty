@@ -1,6 +1,6 @@
 import { NextSeo } from "next-seo";
 
-import "tailwindcss/tailwind.css";
+import "../styles/global.css";
 
 import seoConfig from "../seo-config.js";
 

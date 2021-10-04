@@ -27,7 +27,7 @@ async function writeFile(filePath, data) {
 
 async function createContract(name) {
   const nftTemplate = await fs.readFile(
-    path.resolve(__dirname, "../flow/cadence/templates/NFTTemplate.cdc"),
+    path.resolve(__dirname, "../flow/templates/cadence/NFTTemplate.cdc"),
     "utf8"
   );
 
@@ -43,7 +43,7 @@ async function createContract(name) {
 
 async function createSetupTX(name) {
   const nftTemplate = await fs.readFile(
-    path.resolve(__dirname, "../flow/cadence/templates/SetupTemplate.cdc"),
+    path.resolve(__dirname, "../flow/templates/cadence/SetupTemplate.cdc"),
     "utf8"
   );
 
@@ -59,7 +59,7 @@ async function createSetupTX(name) {
 
 async function createMintTX(name) {
   const nftTemplate = await fs.readFile(
-    path.resolve(__dirname, "../flow/cadence/templates/MintTemplate.cdc"),
+    path.resolve(__dirname, "../flow/templates/cadence/MintTemplate.cdc"),
     "utf8"
   );
 
@@ -75,7 +75,7 @@ async function createMintTX(name) {
 
 async function createReadScript(name) {
   const nftTemplate = await fs.readFile(
-    path.resolve(__dirname, "../flow/cadence/templates/GetTemplate.cdc"),
+    path.resolve(__dirname, "../flow/templates/cadence/GetTemplate.cdc"),
     "utf8"
   );
 

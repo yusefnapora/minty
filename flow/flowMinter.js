@@ -1,6 +1,7 @@
 const t = require("@onflow/types");
 const fcl = require("@onflow/fcl");
 const FlowService = require("./flowService");
+const FlowCliWrapper = require("./flowCli");
 const fs = require("fs/promises");
 const path = require("path");
 const config = require("getconfig");
@@ -29,6 +30,7 @@ const collate = (px) => {
 
 class FlowMinter {
   constructor() {
+    this.flow = null;
     this.flowService = null;
     this.nonFungibleTokenAddress = null;
     this.nftContractAddress = null;
@@ -51,6 +53,8 @@ class FlowMinter {
     this.nonFungibleTokenPath = '"../contracts/NonFungibleToken.cdc"';
     this.nftContractPath = `"../contracts/${this.params.name}.cdc"`;
 
+    this.flow = new FlowCliWrapper();
+
     this.flowService = new FlowService(
       config.adminFlowAccount,
       config.adminFlowPrivateKey,
@@ -63,52 +67,16 @@ class FlowMinter {
     this._initialized = true;
   }
 
+  async deployContracts() {
+    await this.flow.deploy();
+  }
+
   async setupAccount() {
-    const authorization = this.flowService.authorizeMinter();
-
-    let transaction = await fs.readFile(
-      path.join(__dirname, `./cadence/transactions/setup_account.cdc`),
-      "utf8"
-    );
-
-    transaction = transaction
-      .replace(
-        this.nonFungibleTokenPath,
-        fcl.withPrefix(this.nonFungibleTokenAddress)
-      )
-      .replace(this.nftContractPath, fcl.withPrefix(this.nftContractAddress));
-
-    return this.flowService.sendTx({
-      transaction,
-      args: [],
-      authorizations: [authorization],
-      payer: authorization,
-      proposer: authorization
-    });
+    await this.flow.setupAccount();
   }
 
   async mint(recipient, metadata) {
-    const authorization = this.flowService.authorizeMinter();
-
-    let transaction = await fs.readFile(
-      path.join(__dirname, `./cadence/transactions/mint.cdc`),
-      "utf8"
-    );
-
-    transaction = transaction
-      .replace(
-        this.nonFungibleTokenPath,
-        fcl.withPrefix(this.nonFungibleTokenAddress)
-      )
-      .replace(this.nftContractPath, fcl.withPrefix(this.nftContractAddress));
-
-    return this.flowService.sendTx({
-      transaction,
-      args: [fcl.arg(recipient, t.Address), fcl.arg(metadata, t.String)],
-      authorizations: [authorization],
-      payer: authorization,
-      proposer: authorization
-    });
+    await this.flow.mint();
   }
 
   async transfer(recipient, itemID) {

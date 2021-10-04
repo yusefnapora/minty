@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 echo "⚠️  WARNING ⚠️  - This will delete ALL LOCAL NFT data."
+echo -n "Don't do this unless you're testing, or all your NFTs have been pinned. "
 echo -n "Proceed? (y/n) "
 read yesno < /dev/tty
 

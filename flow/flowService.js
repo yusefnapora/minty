@@ -1,8 +1,4 @@
 const fcl = require("@onflow/fcl");
-// const t = require("@onflow/types");
-// const { encodeKey } = require("@onflow/util-encode-key");
-// const fs = require("fs/promises");
-// const path = require("path");
 const { signWithKey } = require("../flow/crypto");
 class FlowService {
   constructor(minterFlowAddress, minterPrivateKeyHex, minterAccountIndex) {
@@ -11,13 +7,10 @@ class FlowService {
     this.minterAccountIndex = minterAccountIndex;
   }
 
-  authorizeMinter() {
+  authorizeMinter(pk = this.minterPrivateKeyHex) {
     return async (account = {}) => {
       const user = await this.getAccount(this.minterFlowAddress);
       const key = user.keys[this.minterAccountIndex];
-
-      const pk = this.minterPrivateKeyHex;
-
       return {
         ...account,
         tempId: `${user.address}-${key.index}`,
@@ -42,39 +35,6 @@ class FlowService {
       };
     };
   }
-
-  // createAccount = async (publicKey, sigAlgo, hashAlgo, authorization) => {
-  //   const encodedPublicKey = encodeKey(publicKey, sigAlgo, hashAlgo, 1000);
-
-  //   let transaction = await fs.readFile(
-  //     path.join(__dirname, `./cadence/transactions/create_account.cdc`),
-  //     "utf8"
-  //   );
-
-  //   const result = await this.sendTx({
-  //     transaction,
-  //     args: [fcl.arg(encodedPublicKey, t.String), fcl.arg(0, t.UFix64)],
-  //     authorizations: [authorization],
-  //     payer: authorization,
-  //     proposer: authorization
-  //   });
-
-  //   const accountCreatedEvent = result.events.find(
-  //     (event) => event.type === accountCreatedEventType
-  //   );
-
-  //   if (!accountCreatedEvent) {
-  //     throw "Transaction did not emit account creation event";
-  //   }
-
-  //   const address = accountCreatedEvent.data.address;
-  //   const transactionId = accountCreatedEvent.transactionId;
-
-  //   return {
-  //     address,
-  //     transactionId
-  //   };
-  // };
 
   async getAccount(addr) {
     const { account } = await fcl.send([fcl.getAccount(addr)]);
