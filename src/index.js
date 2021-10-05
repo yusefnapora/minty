@@ -9,9 +9,10 @@ const inquirer = require("inquirer");
 const chalk = require("chalk");
 const colorize = require("json-colorizer");
 const config = require("getconfig");
-const { getParams, updateParams } = require("../util/params-helpers");
+const { getParams } = require("../util/params-helpers");
 const { MakeMinty } = require("./minty");
 const { generateCode } = require("./deploy");
+const ora = require("ora");
 
 const colorizeOptions = {
   pretty: true,
@@ -20,6 +21,8 @@ const colorizeOptions = {
     STRING_LITERAL: "green"
   }
 };
+
+const spinner = ora();
 
 async function main() {
   const program = new Command();
@@ -66,19 +69,9 @@ async function main() {
     .command("deploy")
     .description("deploy an instance of the Minty NFT contract")
     .option(
-      "-o, --output <deploy-file-path>",
-      "Path to write deployment info to",
-      config.deploymentConfigFile
-    )
-    .option(
-      "-n, --name <name>",
-      "The name of the token contract",
-      params.name || config.defaultContractName
-    )
-    .option(
-      "-s, --symbol <symbol>",
-      "A short symbol for the tokens in this contract",
-      params.symbol || config.defaultContractSymbol
+      "-n, --network <name>",
+      "Either: emulator, testnet, mainnet",
+      params.network || "emulator"
     )
     .action(deploy);
 
@@ -140,9 +133,8 @@ async function createNFT(assetPath, options) {
 }
 
 async function getNFT(tokenId, options) {
-  const { creationInfo: fetchCreationInfo } = options;
   const minty = await MakeMinty();
-  const nft = await minty.getNFT(tokenId, { fetchCreationInfo });
+  const nft = await minty.getNFT(tokenId);
 
   const output = [
     ["Token ID:", chalk.green(nft.tokenId)],
@@ -174,14 +166,16 @@ async function pinNFTData(tokenId) {
   console.log(`🌿 Pinned all data for token id ${chalk.green(tokenId)}`);
 }
 
-async function deploy(options) {
+async function deploy() {
+  const params = await getParams();
+  const info = await generateCode(params.name);
   const minty = await MakeMinty();
-  const filename = options.output;
-  await updateParams(options.name, options.symbol);
-  const info = await generateCode(options.name, options.symbol);
   if (!info) return;
-  const result = await minty.deployContracts();
-  console.log(filename, JSON.stringify(info, null, 2));
+  spinner.start(`Deploying ${params.name} to ${params.network}`);
+  await minty.deployContracts(params.network);
+  spinner.succeed(
+    `✨ Success! ${params.name} deployed to ${params.network} ✨`
+  );
 }
 
 // ---- helpers

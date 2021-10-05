@@ -14,7 +14,7 @@ fi
 
 echo "Flow emulator"
 
-run_emulator_cmd="flow emulator --http-port 8888 "
+run_emulator_cmd="flow emulator --http-port 8888"
 
 npx concurrently -n "flow emulator" -c green "$run_emulator_cmd" 
 

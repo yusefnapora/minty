@@ -12,10 +12,12 @@ const generateMetadata = require("../util/generate-metadata");
 // See https://www.npmjs.com/package/getconfig for info on how to override the default config for
 // different environments (e.g. testnet, mainnet, staging, production, etc).
 const config = require("getconfig");
+
 /**
  * Construct and asynchronously initialize a new Minty instance.
  * @returns {Promise<Minty>} a new instance of Minty, ready to mint NFTs.
  */
+
 async function MakeMinty() {
   const m = new Minty();
   await m.init();
@@ -69,8 +71,8 @@ class Minty {
   // ------ Deployment
   //////////////////////////////////////////////
 
-  async deployContracts() {
-    await this.flowMinter.deployContracts();
+  async deployContracts(network) {
+    await this.flowMinter.deployContracts(network);
   }
 
   //////////////////////////////////////////////
@@ -153,14 +155,12 @@ class Minty {
 
     // mint a new token referencing the metadata URI
     const minted = await this.mintToken(ownerAddress, metadataURI);
-    const deposit = minted.events.find((event) =>
-      event.type.includes("Deposit")
-    );
+    const deposit = formatMintResult(minted);
 
     // format and return the results
     const details = {
-      txId: deposit.transactionId,
-      tokenId: deposit.data.id,
+      txId: deposit.txId,
+      tokenId: deposit.tokenId,
       ownerAddress,
       metadata,
       assetURI,
@@ -172,7 +172,8 @@ class Minty {
     await fs.writeFile(
       path.resolve(
         __dirname,
-        config.mintDataPath + `/${details.tokenId}-${uid()}.json`
+        config.mintDataPath +
+          `/${details.tokenId}-${new Date().toISOString()}-${uid()}.json`
       ),
       JSON.stringify(details),
       "utf8"
@@ -251,9 +252,9 @@ class Minty {
    * @property {number} creationInfo.blockNumber
    * @returns {Promise<NFTInfo>}
    */
-  async getNFT(tokenId, opts) {
+  async getNFT(tokenId) {
     const flowData = await this.flowMinter.getNFTDetails(
-      config.adminFlowAccount,
+      config.emulatorFlowAccount,
       tokenId
     );
 
@@ -286,7 +287,7 @@ class Minty {
    */
   async getNFTMetadata(tokenId) {
     const flowData = await this.flowMinter.getNFTDetails(
-      config.adminFlowAccount,
+      config.emulatorFlowAccount,
       tokenId
     );
 
@@ -323,7 +324,7 @@ class Minty {
    * @returns {Promise<string>} - the default signing address that should own new tokens, if no owner was specified.
    */
   async defaultOwnerAddress() {
-    return config.adminFlowAccount;
+    return config.emulatorFlowAccount;
   }
 
   /**
@@ -435,6 +436,24 @@ function extractCID(cidOrURI) {
   // remove the ipfs:// prefix, split on '/' and return first path component (root CID)
   const cidString = stripIpfsUriPrefix(cidOrURI).split("/")[0];
   return new CID(cidString);
+}
+
+//////////////////////////////////////////////
+// -------- General Helpers
+//////////////////////////////////////////////
+
+function formatMintResult(txOutput) {
+  const deposit = txOutput.events.find((event) =>
+    event.type.includes("Deposit")
+  );
+  const tokenId = deposit.values.value.fields.find(
+    (f) => f.name === "id"
+  ).value;
+
+  return {
+    tokenId: tokenId.value,
+    txId: txOutput.id
+  };
 }
 
 //////////////////////////////////////////////

@@ -1,5 +1,5 @@
 import NonFungibleToken from "../contracts/NonFungibleToken.cdc"
-import TestToken from "../contracts/TestToken.cdc"
+import MyNFT from "../contracts/MyNFT.cdc"
 
 pub struct AccountItem {
   pub let tokenId: UInt64
@@ -14,8 +14,8 @@ pub struct AccountItem {
 }
 
 pub fun fetch(address: Address, id: UInt64): AccountItem? {
-  if let col = getAccount(address).getCapability<&TestToken.Collection{NonFungibleToken.CollectionPublic, TestToken.TestTokenCollectionPublic}>(TestToken.CollectionPublicPath).borrow() {
-    if let item = col.borrowTestToken(id: id) {
+  if let col = getAccount(address).getCapability<&MyNFT.Collection{NonFungibleToken.CollectionPublic, MyNFT.MyNFTCollectionPublic}>(MyNFT.CollectionPublicPath).borrow() {
+    if let item = col.borrowMyNFT(id: id) {
       return AccountItem(tokenId: id, metadata: item.metadata, owner: address)
     }
   }

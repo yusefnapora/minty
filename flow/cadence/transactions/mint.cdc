@@ -1,5 +1,5 @@
 import NonFungibleToken from "../contracts/NonFungibleToken.cdc"
-import TestToken from "../contracts/TestToken.cdc"
+import MyNFT from "../contracts/MyNFT.cdc"
 
 // This transction uses the NFTMinter resource to mint a new NFT.
 //
@@ -9,12 +9,12 @@ import TestToken from "../contracts/TestToken.cdc"
 transaction(recipient: Address, metadata: String) {
     
     // local variable for storing the minter reference
-    let minter: &TestToken.NFTMinter
+    let minter: &MyNFT.NFTMinter
 
     prepare(signer: AuthAccount) {
 
         // borrow a reference to the NFTMinter resource in storage
-        self.minter = signer.borrow<&TestToken.NFTMinter>(from: TestToken.MinterStoragePath)
+        self.minter = signer.borrow<&MyNFT.NFTMinter>(from: MyNFT.MinterStoragePath)
             ?? panic("Could not borrow a reference to the NFT minter")
     }
 
@@ -24,7 +24,7 @@ transaction(recipient: Address, metadata: String) {
 
         // borrow the recipient's public NFT collection reference
         let receiver = recipient
-            .getCapability(TestToken.CollectionPublicPath)!
+            .getCapability(MyNFT.CollectionPublicPath)!
             .borrow<&{NonFungibleToken.CollectionPublic}>()
             ?? panic("Could not get receiver reference to the NFT Collection")
 

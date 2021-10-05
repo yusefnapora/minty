@@ -1,6 +1,23 @@
 const config = {
-  defaultContractName: "CoolCats",
-  defaultContractSymbol: "CCT",
+  //////////////////////////////////////////////
+  // ------ App Configs
+  //////////////////////////////////////////////
+
+  // Store IPFS NFT asset & metadata CIDs and data before pushing to the live network
+  // https://github.com/rarepress/nebulus
+  nebulusPath: "../ipfs-data",
+  mintDataPath: "../mint-data",
+
+  // Location of NFT metadata and assets for minting
+  nftDataPath: "../NFT-Datasheet.csv",
+  nftAssetPath: "../assets",
+
+  // How fast to batch mint txs
+  RATE_LIMIT_MS: 2000,
+
+  //////////////////////////////////////////////
+  // ------ IPFS Configs
+  //////////////////////////////////////////////
 
   // The pinningService config tells minty what remote pinning service to use for pinning the IPFS data for a token.
   // The values are read in from environment variables, to discourage checking credentials into source control.
@@ -20,29 +37,36 @@ const config = {
   ipfsApiUrl: "$$IPFS_API_URL",
 
   // If you're running the local IPFS gateway on a non-default port, or if you want to use a public gatway when displaying IPFS gateway urls, edit this.
+
   ipfsGatewayUrl: "$$IPFS_GATEWAY_URL",
 
-  flowHTTPEndpoint: "$$FLOW_EMULATOR_HTTP_ENDPOINT",
-  flowGRPCEndpoint: "$$FLOW_EMULATOR_GRPC_ENDPOINT",
+  //////////////////////////////////////////////
+  // ------ Emulator Configs
+  //////////////////////////////////////////////
+
+  emulatorHTTPEndpoint: "$$FLOW_EMULATOR_HTTP_ENDPOINT",
+  emulatorGRPCEndpoint: "$$FLOW_EMULATOR_GRPC_ENDPOINT",
 
   // This is the default owner address and signing key for all newly minted NFTs
-  adminFlowAccount: "$$FLOW_EMULATOR_ACCOUNT_ADDRESS",
-  adminFlowPrivateKey: "$$FLOW_EMULATOR_ACCOUNT_PRIVATE_KEY",
+  emulatorFlowAccount: "$$FLOW_EMULATOR_ACCOUNT_ADDRESS",
+  emulatorFlowPrivateKey: "$$FLOW_EMULATOR_ACCOUNT_PRIVATE_KEY",
 
-  fungibleTokenAddress: "$$FLOW_EMULATOR_FUNGIBLE_TOKEN_ADDRESS",
-  nonFungibleTokenAddress: "$$FLOW_EMULATOR_NON_FUNGIBLE_TOKEN_ADDRESS",
+  emulatorFungibleTokenAddress: "$$FLOW_EMULATOR_FUNGIBLE_TOKEN_ADDRESS",
+  emulatorNonFungibleTokenAddress: "$$FLOW_EMULATOR_NON_FUNGIBLE_TOKEN_ADDRESS",
 
-  // Store IPFS NFT asset & metadata CIDs and data before pushing to the live network
-  // https://github.com/rarepress/nebulus
-  nebulusPath: "../ipfs-data",
-  mintDataPath: "../mint-data",
+  //////////////////////////////////////////////
+  // ------ Testnet Configs
+  //////////////////////////////////////////////
 
-  // Location of NFT metadata and assets for minting
-  nftDataPath: "../NFT-Datasheet.csv",
-  nftAssetPath: "../assets",
+  testnetHTTPEndpoint: "$$FLOW_TESTNET_HTTP_ENDPOINT",
+  testnetGRPCEndpoint: "$$FLOW_TESTNET_GRPC_ENDPOINT",
 
-  // How fast to batch mint txs
-  RATE_LIMIT_MS: 2000
+  // This is the default owner address and signing key for all newly minted NFTs
+  testnetFlowAccount: "$$FLOW_TESTNET_ACCOUNT_ADDRESS",
+  testnetFlowPrivateKey: "$$FLOW_TESTNET_ACCOUNT_PRIVATE_KEY",
+
+  testnetFungibleTokenAddress: "$$FLOW_TESTNET_FUNGIBLE_TOKEN_ADDRESS",
+  testnetNonFungibleTokenAddress: "$$FLOW_TESTNET_NON_FUNGIBLE_TOKEN_ADDRESS"
 };
 
 module.exports = config;

@@ -1,5 +1,6 @@
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
+const config = require("getconfig");
 
 async function handleError(error) {
   console.error(error);
@@ -9,7 +10,9 @@ async function handleError(error) {
 class FlowCliWrapper {
   constructor() {}
 
-  async deploy(network = "emulator") {
+  async deploy(network) {
+    if (!network) network = "emulator";
+
     const { stderr: deployCoreContractsError } = await exec(
       `flow project deploy --network=${network} -f flow.json --update -o json`
     );
@@ -29,9 +32,11 @@ class FlowCliWrapper {
     return JSON.parse(out2);
   }
 
-  async setupAccount(network = "emulator") {
+  async setupAccount(network, signer) {
+    if (!network) network = "emulator";
+
     const { stdout: out, stderr: setupAccountError } = await exec(
-      `flow transactions send --network=${network} ./flow/cadence/transactions/setup_account.cdc -f minty-deployment.json -f flow.json`
+      `flow transactions send --network=${network} --signer ${signer} ./flow/cadence/transactions/setup_account.cdc -f minty-deployment.json -f flow.json -o json`
     );
 
     if (setupAccountError) {
@@ -41,9 +46,13 @@ class FlowCliWrapper {
     return JSON.parse(out);
   }
 
-  async mint(network = "emulator") {
+  async mint(recipient, metadata, network, signer) {
+    if (!network) network = "emulator";
+
     const { stdout: out, stderr: mintingError } = await exec(
-      `flow transactions send --network=${network} ./flow/cadence/transactions/mint.cdc -f minty-deployment.json -f flow.json`
+      `flow transactions send --network=${network} --signer ${signer} ./flow/cadence/transactions/mint.cdc "${recipient}" ${JSON.stringify(
+        metadata
+      )} -f minty-deployment.json -f flow.json -o json`
     );
 
     if (mintingError) {

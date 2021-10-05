@@ -24,6 +24,11 @@ const collate = (px) => {
   );
 };
 
+const fclEndpoints = {
+  testnet: config.testnetHTTPEndpoint,
+  emulator: config.emulatorHTTPEndpoint
+};
+
 //////////////////////////////////////////////
 // -------- Flow Minter
 //////////////////////////////////////////////
@@ -32,7 +37,7 @@ class FlowMinter {
   constructor() {
     this.flow = null;
     this.flowService = null;
-    this.nonFungibleTokenAddress = null;
+    this.emulatorNonFungibleTokenAddress = null;
     this.nftContractAddress = null;
     this.nonFungibleTokenPath = null;
     this.nftContractPath = null;
@@ -47,6 +52,8 @@ class FlowMinter {
 
     this.params = await getParams();
 
+    fcl.config().put("accessNode.api", fclEndpoints[this.params.network]);
+
     // Not the filesystem path, the path to the contract
     // as written in the cadence files. Used to do string
     // replacement, path -> Flow address
@@ -56,27 +63,36 @@ class FlowMinter {
     this.flow = new FlowCliWrapper();
 
     this.flowService = new FlowService(
-      config.adminFlowAccount,
-      config.adminFlowPrivateKey,
+      config.emulatorFlowAccount,
+      config.emulatorFlowPrivateKey,
       0 // account index (keyId)
     );
     // The address of the NFT contract interface
-    this.nonFungibleTokenAddress = config.nonFungibleTokenAddress;
+    this.emulatorNonFungibleTokenAddress =
+      config.emulatorNonFungibleTokenAddress;
     // The address of the new custom NFT contract
-    this.nftContractAddress = config.adminFlowAccount;
+    this.nftContractAddress = config.emulatorFlowAccount;
     this._initialized = true;
   }
 
-  async deployContracts() {
-    await this.flow.deploy();
+  async deployContracts(network) {
+    await this.flow.deploy(network);
   }
 
   async setupAccount() {
-    await this.flow.setupAccount();
+    return await this.flow.setupAccount(
+      this.params.network,
+      `${this.params.network}-account`
+    );
   }
 
-  async mint(recipient, metadata) {
-    await this.flow.mint();
+  async mint(recipient, metadata, network) {
+    return await this.flow.mint(
+      recipient,
+      metadata,
+      network,
+      `${this.params.network}-account`
+    );
   }
 
   async transfer(recipient, itemID) {
@@ -90,7 +106,7 @@ class FlowMinter {
     transaction = transaction
       .replace(
         this.nonFungibleTokenPath,
-        fcl.withPrefix(this.nonFungibleTokenAddress)
+        fcl.withPrefix(this.emulatorNonFungibleTokenAddress)
       )
       .replace(this.nftContractPath, fcl.withPrefix(this.nftContractAddress));
 
@@ -112,7 +128,7 @@ class FlowMinter {
     script = script
       .replace(
         this.nonFungibleTokenPath,
-        fcl.withPrefix(this.nonFungibleTokenAddress)
+        fcl.withPrefix(this.emulatorNonFungibleTokenAddress)
       )
       .replace(this.nftContractPath, fcl.withPrefix(this.nftContractAddress));
 

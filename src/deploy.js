@@ -9,10 +9,7 @@ const {
   createReadScript
 } = require("../util/codegen");
 
-const fcl = require("@onflow/fcl");
-fcl.config().put("accessNode.api", config.flowHTTPEndpoint);
-
-async function generateCode(name, symbol) {
+async function generateCode(name) {
   const deploymentInfo = deploymentInfoFormatter(name);
   const go = await saveDeploymentInfo(deploymentInfo);
   if (!go) return;
@@ -26,51 +23,53 @@ async function generateCode(name, symbol) {
 function deploymentInfoFormatter(contractName) {
   return {
     networks: {
-      emulator: config.flowGRPCEndpoint
+      emulator: config.emulatorGRPCEndpoint,
+      testnet: config.testnetGRPCEndpoint
     },
     accounts: {
       "emulator-account": {
-        address: config.adminFlowAccount,
-        keys: config.adminFlowPrivateKey
+        address: config.emulatorFlowAccount,
+        keys: config.emulatorFlowPrivateKey
+      },
+      "testnet-account": {
+        address: config.testnetFlowAccount,
+        keys: config.testnetFlowPrivateKey
       }
     },
     contracts: {
       [contractName]: {
         source: `flow/cadence/contracts/${contractName}.cdc`,
         aliases: {
-          emulator: config.adminFlowAccount
-        }
-      },
-      FungibleToken: {
-        source: "flow/cadence/contracts/FungibleToken.cdc",
-        aliases: {
-          emulator: config.fungibleTokenAddress
+          emulator: config.emulatorFlowAccount,
+          testnet: config.testnetFlowAccount
         }
       }
     },
     deployments: {
       emulator: {
         "emulator-account": [`${contractName}`]
+      },
+      testnet: {
+        "testnet-account": [`${contractName}`]
       }
     }
   };
 }
 
-async function saveDeploymentInfo(info, filename = undefined) {
-  if (!filename) {
-    filename = config.deploymentConfigFile || "minty-deployment.json";
-  }
-  const exists = await fileExists(filename);
+async function saveDeploymentInfo(info) {
+  const exists = await fileExists(config.deploymentConfigFile);
   if (exists) {
-    const overwrite = await confirmOverwrite(filename);
+    const overwrite = await confirmOverwrite(config.deploymentConfigFile);
     if (!overwrite) {
       return false;
     }
   }
 
-  console.log(`Writing deployment info to ${filename}`);
+  console.log(`Writing deployment info to ${config.deploymentConfigFile}`);
   const content = JSON.stringify(info, null, 2);
-  await fs.writeFile(filename, content, { encoding: "utf-8" });
+  await fs.writeFile(config.deploymentConfigFile, content, {
+    encoding: "utf-8"
+  });
   return true;
 }
 
