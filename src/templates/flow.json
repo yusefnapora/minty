@@ -7,17 +7,24 @@
   },
   "contracts": {
     "FungibleToken": {
-      "source": "flow/cadence/contracts/FungibleToken.cdc",
+      "source": "cadence/contracts/FungibleToken.cdc",
       "aliases": {
         "emulator": "0xee82856bf20e2aa6",
         "testnet": "0x9a0766d93b6608b7"
       }
     },
-    "NonFungibleToken": {
-      "source": "flow/cadence/contracts/NonFungibleToken.cdc",
+      "NonFungibleToken": {
+      "source": "cadence/contracts/NonFungibleToken.cdc",
       "aliases": {
         "emulator": "0xf8d6e0586b0a20c7",
         "testnet": "0x631e88ae7f1d7c20"
+      }
+    },
+    "{{name}}": {
+      "source": "cadence/contracts/{{name}}.cdc",
+      "aliases": {
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0xf8d6e0586b0a20c7"
       }
     }
   },
@@ -28,13 +35,14 @@
   "accounts": {
     "emulator-account": {
       "address": "f8d6e0586b0a20c7",
-      "keys": "f8e188e8af0b8b414be59c4a1a15cc666c898fb34d94156e9b51e18bfde754a5"
+      "key": "4d9287571c8bff7482ffc27ef68d5b4990f9bd009a1e9fa812aae08ba167d57f"
     }
   },
   "deployments": {
     "emulator": {
       "emulator-account": [
-        "NonFungibleToken"
+        "NonFungibleToken",
+        "{{name}}"
       ]
     }
   }

@@ -1,0 +1,15 @@
+{
+  "accounts": {
+    "mainnet-account": {
+      "address": "${FLOW_MAINNET_ADDRESS}",
+      "key": "${FLOW_MAINNET_PRIVATE_KEY}"
+    }
+  },
+  "deployments": {
+    "mainnet": {
+      "mainnet-account": [
+        "{{name}}"
+      ]
+    }
+  }
+}

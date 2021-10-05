@@ -13,7 +13,7 @@ pub struct AccountItem {
   }
 }
 
-pub fun fetch(address: Address, id: UInt64): AccountItem? {
+pub fun main(address: Address, id: UInt64): AccountItem? {
   if let col = getAccount(address).getCapability<&{{name}}.Collection{NonFungibleToken.CollectionPublic, {{name}}.{{name}}CollectionPublic}>({{name}}.CollectionPublicPath).borrow() {
     if let item = col.borrow{{name}}(id: id) {
       return AccountItem(tokenId: id, metadata: item.metadata, owner: address)
@@ -21,17 +21,4 @@ pub fun fetch(address: Address, id: UInt64): AccountItem? {
   }
 
   return nil
-}
-
-pub fun main(keys: [String], addresses: [Address], ids: [UInt64]): {String: AccountItem?} {
-  let r: {String: AccountItem?} = {}
-  var i = 0
-  while i < keys.length {
-    let key = keys[i]
-    let address = addresses[i]
-    let id = ids[i]
-    r[key] = fetch(address: address, id: id)
-    i = i + 1
-  }
-  return r
 }

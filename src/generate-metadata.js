@@ -1,10 +1,13 @@
 const parse = require("csv-parse/lib/sync");
 const fs = require("fs");
 const path = require("path");
-const config = require("getconfig");
+
+const getConfig = require("./config");
 
 const generateMetaData = async (csvPath) => {
-  const nftCSV = fs.readFileSync(path.resolve(__dirname, csvPath));
+  const config = getConfig()
+
+  const nftCSV = fs.readFileSync(path.resolve(process.env.PWD, csvPath));
   // Parse the CSV content
   const records = parse(nftCSV);
 
@@ -24,7 +27,7 @@ const generateMetaData = async (csvPath) => {
 
     try {
       fs.statSync(
-        path.resolve(__dirname, `${config.nftAssetPath}/${record.asset}`)
+        path.resolve(process.env.PWD, `${config.nftAssetPath}/${record.asset}`)
       );
     } catch (e) {
       throw new Error(
