@@ -1,0 +1,24 @@
+version: "3"
+services:
+  emulator:
+    image: gcr.io/flow-container-registry/emulator:v0.22.0
+    ports:
+      - "8080:8080"
+      - "3569:3569"
+    environment:
+      - FLOW_SERVICEPRIVATEKEY=4d9287571c8bff7482ffc27ef68d5b4990f9bd009a1e9fa812aae08ba167d57f
+      - FLOW_SERVICEKEYSIGALGO=ECDSA_P256
+      - FLOW_SERVICEKEYHASHALGO=SHA3_256
+      - FLOW_VERBOSE=true
+  dev-wallet:
+    image: ghcr.io/onflow/fcl-dev-wallet:latest
+    ports:
+      - "8701:3000"
+    environment:
+      - FLOW_ACCESS_NODE=http://emulator:8080
+      - FLOW_ACCOUNT_ADDRESS=0xf8d6e0586b0a20c7
+      - FLOW_ACCOUNT_KEY_ID=0
+      - FLOW_ACCOUNT_PRIVATE_KEY=4d9287571c8bff7482ffc27ef68d5b4990f9bd009a1e9fa812aae08ba167d57f
+      - FLOW_ACCOUNT_PUBLIC_KEY=c49b0225a3d837d520a2708d5b5a967d2decbe975849f366f951e3dab50ce189d03e427a5138577d8005815181c30ddc13a5a189c4eb52dfec19e3f990b6a0dd
+    depends_on:
+      - emulator
