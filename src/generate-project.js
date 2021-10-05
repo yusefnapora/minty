@@ -9,7 +9,11 @@ async function generateProject(projectName, contractName) {
   await createSetupTransaction(projectName, contractName);
   await createMintTransaction(projectName, contractName);
   await createReadScript(projectName, contractName);
+
   await createFlowConfig(projectName, contractName);
+  await createFlowTestnetConfig(projectName, contractName);
+  await createFlowMainnetConfig(projectName, contractName);
+
   await createReadme(projectName, contractName);
 }
 
@@ -73,8 +77,8 @@ async function createScaffold(dir) {
   )
 
   await fs.copy(
-    path.resolve(__dirname, "templates/launch-local.sh"), 
-    path.resolve(dir, "launch-local.sh")
+    path.resolve(__dirname, "templates/docker-compose.yml"), 
+    path.resolve(dir, "docker-compose.yml")
   )
   
   await fs.copy(
@@ -164,6 +168,38 @@ async function createFlowConfig(dir, name) {
 
   await writeFile(
     path.resolve(dir, "flow.json"),
+    result
+  );
+}
+
+async function createFlowTestnetConfig(dir, name) {
+  const configTemplate = await fs.readFile(
+    path.resolve(__dirname, "templates/flow.testnet.json"),
+    "utf8"
+  );
+
+  const template = Handlebars.compile(configTemplate);
+
+  const result = template({ name });
+
+  await writeFile(
+    path.resolve(dir, "flow.testnet.json"),
+    result
+  );
+}
+
+async function createFlowMainnetConfig(dir, name) {
+  const configTemplate = await fs.readFile(
+    path.resolve(__dirname, "templates/flow.mainnet.json"),
+    "utf8"
+  );
+
+  const template = Handlebars.compile(configTemplate);
+
+  const result = template({ name });
+
+  await writeFile(
+    path.resolve(dir, "flow.mainnet.json"),
     result
   );
 }

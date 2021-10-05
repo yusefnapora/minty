@@ -3,7 +3,7 @@
 ## Start the emulator
 
 ```sh
-./local-launch.sh
+docker-compose up -d
 ```
 
 ## Deploy your contract

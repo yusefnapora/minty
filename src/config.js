@@ -13,6 +13,10 @@ function getConfig() {
     path.resolve(process.env.PWD, "flow.json")
   )
 
+  const flowTestnetConfig = require(
+    path.resolve(process.env.PWD, "flow.testnet.json")
+  )
+
   return {
     //////////////////////////////////////////////
     // ------ App Configs
@@ -68,8 +72,8 @@ function getConfig() {
 
     // This is the default owner address and signing key for all newly minted NFTs
     testnetFlowAccount: userConfig.testnetFlowAccount ? 
-      getAccount(userConfig.testnetFlowAccount, flowConfig) :
-      getAccount("testnet-account", flowConfig),
+      getAccount(userConfig.testnetFlowAccount, flowTestnetConfig) :
+      getAccount("testnet-account", flowTestnetConfig),
   }
 }
 

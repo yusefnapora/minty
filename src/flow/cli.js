@@ -12,19 +12,32 @@ function formatArgString(args) {
   return JSON.stringify(cadenceArgs)
 }
 
+function formatConfigString(configs) {
+  return configs.map((c) => `-f ${c}`).join(" ")
+}
+
 class FlowCliWrapper {
 
   constructor(network) {
     if (!network) network = "emulator";
 
+    let configs = ["flow.json"]
+
+    if (network === "testnet") {
+      configs.push("flow.testnet.json")
+    }
+
     this.network = network
+    this.configs = configs
   }
 
   async deploy() {
+    const configString = formatConfigString(this.configs)
+
     const { stdout: out, stderr: err } = await exec(
       `flow project deploy \
         --network=${this.network} \
-        -f flow.json \
+        ${configString} \
         --update \
         -o json`,
         { cwd: process.env.PWD }
@@ -39,12 +52,13 @@ class FlowCliWrapper {
 
   async transaction(path, signer, args) {
     const argString = formatArgString(args)
+    const configString = formatConfigString(this.configs)
 
     const { stdout: out, stderr: err } = await exec(
       `flow transactions send \
         --network=${this.network} \
         --signer ${signer} \
-        -f flow.json \
+        ${configString} \
         -o json \
         --args-json '${argString}' \
         ${path}`,
@@ -60,11 +74,12 @@ class FlowCliWrapper {
 
   async script(path, args) {
     const argString = formatArgString(args)
+    const configString = formatConfigString(this.configs)
 
     const { stdout: out, stderr: err } = await exec(
       `flow scripts execute \
         --network=${this.network} \
-        -f flow.json \
+        ${configString} \
         -o json \
         --args-json '${argString}' \
         ${path}`,

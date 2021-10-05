@@ -35,22 +35,13 @@
   "accounts": {
     "emulator-account": {
       "address": "f8d6e0586b0a20c7",
-      "key": "f8e188e8af0b8b414be59c4a1a15cc666c898fb34d94156e9b51e18bfde754a5"
-    },
-    "testnet-account": {
-      "address": "0xf8d6e0586b0a20c7",
-      "keys": "f8e188e8af0b8b414be59c4a1a15cc666c898fb34d94156e9b51e18bfde754a5"
+      "key": "4d9287571c8bff7482ffc27ef68d5b4990f9bd009a1e9fa812aae08ba167d57f"
     }
   },
   "deployments": {
     "emulator": {
       "emulator-account": [
         "NonFungibleToken",
-        "{{name}}"
-      ]
-    },
-    "testnet": {
-      "testnet-account": [
         "{{name}}"
       ]
     }

@@ -139,8 +139,6 @@ async function batchMintNFT(options) {
 
   if (!answer.confirm) return;
 
-  console.log(minty.config)
-
   const result = await minty.createNFTsFromCSVFile(options.data, (nft) => {
     console.log(colorize(JSON.stringify(nft), colorizeOptions));
   });
