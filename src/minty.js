@@ -5,13 +5,10 @@ const { uid } = require("@onflow/util-uid");
 const { NFTStorage, Blob } = require("nft.storage");
 const Nebulus = require("nebulus");
 const ora = require("ora");
-const { loadDeploymentInfo } = require("./deploy");
-const FlowMinter = require("../flow/flowMinter");
-const generateMetadata = require("../util/generate-metadata");
-// The getconfig package loads configuration from files located in the the `config` directory.
-// See https://www.npmjs.com/package/getconfig for info on how to override the default config for
-// different environments (e.g. testnet, mainnet, staging, production, etc).
-const config = require("getconfig");
+const FlowMinter = require("./flow/flowMinter");
+const generateMetadata = require("./generate-metadata");
+
+const getConfig = require("./config");
 
 /**
  * Construct and asynchronously initialize a new Minty instance.
@@ -25,9 +22,7 @@ async function MakeMinty() {
 }
 
 async function MakeFlowMinter() {
-  const m = new FlowMinter();
-  await m.init();
-  return m;
+  return new FlowMinter();
 }
 
 /**
@@ -40,10 +35,10 @@ async function MakeFlowMinter() {
  */
 class Minty {
   constructor() {
+    this.config = null
     this.ipfs = null;
     this.nebulus = null;
     this.flowMinter = null;
-    this.deployInfo = null;
     this._initialized = false;
   }
 
@@ -51,16 +46,16 @@ class Minty {
     if (this._initialized) {
       return;
     }
-    // Deployment details written to a deployment info file. The default location is `./minty-deployment.json`,
-    // in the config.
-    this.deployInfo = await loadDeploymentInfo();
+
+    this.config = getConfig()
+
     this.flowMinter = await MakeFlowMinter();
 
     this.nebulus = new Nebulus({
-      path: path.resolve(__dirname, config.nebulusPath)
+      path: path.resolve(process.env.PWD, this.config.nebulusPath)
     });
 
-    this.ipfs = new NFTStorage({ token: config.pinningService.key });
+    this.ipfs = new NFTStorage({ token: this.config.pinningService.key });
 
     this.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -71,8 +66,8 @@ class Minty {
   // ------ Deployment
   //////////////////////////////////////////////
 
-  async deployContracts(network) {
-    await this.flowMinter.deployContracts(network);
+  async deployContracts() {
+    await this.flowMinter.deployContracts();
   }
 
   //////////////////////////////////////////////
@@ -94,11 +89,11 @@ class Minty {
     console.log("Minting started...");
     for (const metadata of metadatas) {
       const result = await this.createNFTFromAssetData({
-        path: "assets/" + metadata.asset,
+        path: path.resolve(process.env.PWD, `${this.config.nftAssetPath}/${metadata.asset}`),
         ...metadata
       });
       cb(result);
-      await this.sleep(config.RATE_LIMIT_MS);
+      await this.sleep(this.config.RATE_LIMIT_MS);
     }
     return {
       total: metadatas.length
@@ -130,12 +125,9 @@ class Minty {
 
   async createNFTFromAssetData(options) {
     const filePath = options.path || "asset.bin";
-    const basename = path.basename(filePath);
 
     // add the asset to IPFS
-    const assetCid = await this.nebulus.add(
-      path.resolve(__dirname, "../" + filePath)
-    );
+    const assetCid = await this.nebulus.add(filePath);
 
     const assetURI = ensureIpfsUriPrefix(assetCid);
     const metadata = await this.makeNFTMetadata(assetURI, options);
@@ -165,14 +157,14 @@ class Minty {
       metadata,
       assetURI,
       metadataURI,
-      assetGatewayURL: makeGatewayURL(assetURI),
-      metadataGatewayURL: makeGatewayURL(metadataURI)
+      assetGatewayURL: makeGatewayURL(this.config.ipfsGatewayUrl, assetURI),
+      metadataGatewayURL: makeGatewayURL(this.config.ipfsGatewayUrl, metadataURI)
     };
 
     await fs.writeFile(
       path.resolve(
-        __dirname,
-        config.mintDataPath +
+        process.env.PWD,
+        this.config.mintDataPath +
           `/${details.tokenId}-${new Date().toISOString()}-${uid()}.json`
       ),
       JSON.stringify(details),
@@ -254,13 +246,13 @@ class Minty {
    */
   async getNFT(tokenId) {
     const flowData = await this.flowMinter.getNFTDetails(
-      config.emulatorFlowAccount,
+      this.config.emulatorFlowAccount.address,
       tokenId
     );
 
     const metadataURI = flowData.metadata;
     const ownerAddress = flowData.owner;
-    const metadataGatewayURL = makeGatewayURL(metadataURI);
+    const metadataGatewayURL = makeGatewayURL(this.config.ipfsGatewayUrl, metadataURI);
 
     const metadata = await this.getIPFSJSON(metadataURI);
 
@@ -273,7 +265,7 @@ class Minty {
     };
 
     nft.assetURI = metadata.asset;
-    nft.assetGatewayURL = makeGatewayURL(metadata.asset);
+    nft.assetGatewayURL = makeGatewayURL(this.config.ipfsGatewayUrl, metadata.asset);
 
     return nft;
   }
@@ -287,7 +279,7 @@ class Minty {
    */
   async getNFTMetadata(tokenId) {
     const flowData = await this.flowMinter.getNFTDetails(
-      config.emulatorFlowAccount,
+      this.config.emulatorFlowAccount.address,
       tokenId
     );
 
@@ -324,7 +316,7 @@ class Minty {
    * @returns {Promise<string>} - the default signing address that should own new tokens, if no owner was specified.
    */
   async defaultOwnerAddress() {
-    return config.emulatorFlowAccount;
+    return this.config.emulatorFlowAccount.address;
   }
 
   /**
@@ -372,7 +364,7 @@ class Minty {
 
       const pin = async (cid) => {
         const data = await fs.readFile(
-          path.resolve(__dirname, `../ipfs-data/ipfs/${cid}`),
+          path.resolve(process.env.PWD, `ipfs-data/ipfs/${cid}`),
           "utf8"
         );
         return await this.ipfs.storeBlob(new Blob([data]));
@@ -423,8 +415,8 @@ function ensureIpfsUriPrefix(cidOrURI) {
  * @param {string} ipfsURI - an ipfs:// uri or CID string
  * @returns - an HTTP url to view the IPFS object on the configured gateway.
  */
-function makeGatewayURL(ipfsURI) {
-  return config.ipfsGatewayUrl + "/" + stripIpfsUriPrefix(ipfsURI);
+function makeGatewayURL(ipfsGatewayUrl, ipfsURI) {
+  return ipfsGatewayUrl + "/" + stripIpfsUriPrefix(ipfsURI);
 }
 
 /**

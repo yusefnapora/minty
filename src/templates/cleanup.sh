@@ -12,20 +12,9 @@ if [ "x$yesno" = "xy" ];then
     rm -rfv mint-data/*
     touch mint-data/.gitkeep
 
-    rm -rfv flow/cadence/transactions/*
-    touch flow/cadence/transactions/.gitkeep
-
-    rm -rfv flow/cadence/scripts/*
-    touch flow/cadence/scripts/.gitkeep
-
-    rm minty-deployment.json
-
     echo "🧹 DONE 🧹 (Generated contracts were not removed.)"
 else
 
     echo "Aborting."
     exit 1
 fi
-
-
-

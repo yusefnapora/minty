@@ -8,11 +8,9 @@ const { Command } = require("commander");
 const inquirer = require("inquirer");
 const chalk = require("chalk");
 const colorize = require("json-colorizer");
-const config = require("getconfig");
-const { getParams } = require("../util/params-helpers");
-const { MakeMinty } = require("./minty");
-const { generateCode } = require("./deploy");
 const ora = require("ora");
+const { MakeMinty } = require("./minty");
+const generateProject = require("./generate-project");
 
 const colorizeOptions = {
   pretty: true,
@@ -26,17 +24,23 @@ const spinner = ora();
 
 async function main() {
   const program = new Command();
-  const params = await getParams();
+
   // commands
+
+  program
+  .command("init")
+  .description("initialize a new project")
+  .action(init);
+
   program
     .command("mint")
     .description("create multiple NFTs using data from a csv file")
     .option(
       "-d, --data <csv-path>",
       "The location of the csv file to use for minting",
-      config.nftDataPath
+      "nfts.csv"
     )
-    .action(batchCreateNFT);
+    .action(batchMintNFT);
 
   program
     .command("mintone <image-path>")
@@ -48,7 +52,7 @@ async function main() {
       "The Flow address that should own the NFT." +
         "If not provided, defaults to the first signing address."
     )
-    .action(createNFT);
+    .action(mintNFT);
 
   program
     .command("show <token-id>")
@@ -71,7 +75,7 @@ async function main() {
     .option(
       "-n, --network <name>",
       "Either: emulator, testnet, mainnet",
-      params.network || "emulator"
+      "emulator"
     )
     .action(deploy);
 
@@ -86,16 +90,56 @@ async function main() {
 
 // ---- command action functions
 
-async function batchCreateNFT(options) {
+async function init() {
+  const questions = [
+    {
+      type: 'input',
+      name: 'projectName',
+      message: "What's your project name? (e.g. my-nft-project)",
+    },
+    {
+      type: 'input',
+      name: 'contractName',
+      message: "What's your contract name? (e.g. MyNFT)",
+    }
+  ]
+
+  const answers = await inquirer.prompt(questions);
+
+  await generateProject(
+    answers.projectName, 
+    answers.contractName,
+  );
+
+  console.log(
+    `\nProject initialized in ./${answers.projectName}\n\ncd ${answers.projectName}`
+  );
+}
+
+async function deploy({ network }) {
+  const minty = await MakeMinty();
+  
+  spinner.start(`Deploying project to ${network}`);
+
+  await minty.deployContracts();
+
+  spinner.succeed(
+    `✨ Success! Project deployed to ${network} ✨`
+  );
+}
+
+async function batchMintNFT(options) {
   const minty = await MakeMinty();
 
   const answer = await inquirer.prompt({
     type: "confirm",
     name: "confirm",
-    message: `Create NFTs using data from ${path.basename(config.nftDataPath)}?`
+    message: `Create NFTs using data from ${path.basename(options.data)}?`
   });
 
   if (!answer.confirm) return;
+
+  console.log(minty.config)
 
   const result = await minty.createNFTsFromCSVFile(options.data, (nft) => {
     console.log(colorize(JSON.stringify(nft), colorizeOptions));
@@ -104,7 +148,7 @@ async function batchCreateNFT(options) {
   console.log(`✨ Success! ${result.total} NFTs were minted! ✨`);
 }
 
-async function createNFT(assetPath, options) {
+async function mintNFT(assetPath, options) {
   const minty = await MakeMinty();
 
   // prompt for missing details if not provided as cli args
@@ -128,6 +172,7 @@ async function createNFT(assetPath, options) {
     ["Asset Address:", chalk.blue(nft.assetURI)],
     ["Asset Gateway URL:", chalk.blue(nft.assetGatewayURL)]
   ]);
+
   console.log("NFT Metadata:");
   console.log(colorize(JSON.stringify(nft.metadata), colorizeOptions));
 }
@@ -164,18 +209,6 @@ async function pinNFTData(tokenId) {
   const minty = await MakeMinty();
   await minty.pinTokenData(tokenId);
   console.log(`🌿 Pinned all data for token id ${chalk.green(tokenId)}`);
-}
-
-async function deploy() {
-  const params = await getParams();
-  const info = await generateCode(params.name);
-  const minty = await MakeMinty();
-  if (!info) return;
-  spinner.start(`Deploying ${params.name} to ${params.network}`);
-  await minty.deployContracts(params.network);
-  spinner.succeed(
-    `✨ Success! ${params.name} deployed to ${params.network} ✨`
-  );
 }
 
 // ---- helpers
