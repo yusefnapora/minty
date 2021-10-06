@@ -8,6 +8,7 @@ const generateMetaData = async (csvPath) => {
   const config = getConfig();
 
   const nftCSV = fs.readFileSync(path.resolve(process.env.PWD, csvPath));
+  
   // Parse the CSV content
   const records = parse(nftCSV);
 

@@ -60,6 +60,16 @@ async function main() {
     .description("get info from Flow about an NFT using its token ID")
     .action(getNFT);
 
+  program
+    .command("start-drop")
+    .description("start a new NFT drop")
+    .action(startDrop);
+
+  program
+    .command("remove-drop")
+    .description("remove the current NFT drop")
+    .action(removeDrop);
+
   // program
   //   .command("transfer <token-id> <to-address>")
   //   .description("transfer an NFT to a new owner")
@@ -108,7 +118,7 @@ async function init() {
   const answers = await inquirer.prompt(questions);
 
   await generateProject(answers.projectName, answers.contractName);
-  await generateWebAssets(answers.projectName, answers.projectName);
+  await generateWebAssets(answers.projectName, answers.contractName);
 
   console.log(
     `\nProject initialized in ./${answers.projectName}\n\ncd ${answers.projectName}`
@@ -170,6 +180,22 @@ async function mintNFT(assetPath, options) {
 
   console.log("NFT Metadata:");
   console.log(colorize(JSON.stringify(nft.metadata), colorizeOptions));
+}
+
+async function startDrop() {
+  const minty = await MakeMinty();
+
+  await minty.startDrop();
+
+  spinner.succeed(`✨ Success! Drop started. ✨`);
+}
+
+async function removeDrop() {
+  const minty = await MakeMinty();
+
+  await minty.removeDrop();
+
+  spinner.succeed(`✨ Success! Drop removed. ✨`);
 }
 
 async function getNFT(tokenId, options) {

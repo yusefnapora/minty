@@ -1,11 +1,6 @@
-import { useState, useEffect } from "react";
 import * as fcl from "@onflow/fcl";
 
-export default function AuthCluster() {
-  const [user, setUser] = useState({ loggedIn: null });
-
-  useEffect(() => fcl.currentUser().subscribe(setUser), []);
-
+export default function AuthCluster({ user }) {
   if (user.loggedIn) {
     return (
       <div>
