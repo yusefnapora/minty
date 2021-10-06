@@ -1,21 +1,17 @@
 const path = require("path");
-const { withPrefix } = require("@onflow/util-address")
+const { withPrefix } = require("@onflow/util-address");
 
 function getConfig() {
+  require("dotenv").config({ path: path.resolve(process.env.PWD, ".env") });
 
-  require("dotenv").config({ path: path.resolve(process.env.PWD, '.env') })
+  const userConfig = require(path.resolve(process.env.PWD, "minty.config.js"));
 
-  const userConfig = require(
-    path.resolve(process.env.PWD, "minty.config.js")
-  )
+  const flowConfig = require(path.resolve(process.env.PWD, "flow.json"));
 
-  const flowConfig = require(
-    path.resolve(process.env.PWD, "flow.json")
-  )
-
-  const flowTestnetConfig = require(
-    path.resolve(process.env.PWD, "flow.testnet.json")
-  )
+  const flowTestnetConfig = require(path.resolve(
+    process.env.PWD,
+    "flow.testnet.json"
+  ));
 
   return {
     //////////////////////////////////////////////
@@ -62,28 +58,59 @@ function getConfig() {
     //////////////////////////////////////////////
 
     // This is the default owner address and signing key for all newly minted NFTs
-    emulatorFlowAccount: userConfig.emulatorFlowAccount ? 
-      getAccount(userConfig.emulatorFlowAccount, flowConfig) :
-      getAccount("emulator-account", flowConfig),
+    emulatorFlowAccount: userConfig.emulatorFlowAccount
+      ? getAccount(userConfig.emulatorFlowAccount, flowConfig)
+      : getAccount("emulator-account", flowConfig),
+
+    emulatorAccessAPI: userConfig.emulatorAccessAPI || "http://localhost:8080",
+    emulatorWalletDiscovery:
+      userConfig.emulatorWalletDiscovery || "http://localhost:8701/fcl/authn",
+
+    emulatorNFTAddress:
+      userConfig.emulatorNFTAddress ||
+      flowConfig.contracts.NonFUngibleToken.aliases.emulator,
+
+    emualtorFTAddress:
+      userConfig.emulatorFTAddress ||
+      flowConfig.contracts.FungibleToken.aliases.emulator,
 
     //////////////////////////////////////////////
     // ------ Testnet Configs
     //////////////////////////////////////////////
 
     // This is the default owner address and signing key for all newly minted NFTs
-    testnetFlowAccount: userConfig.testnetFlowAccount ? 
-      getAccount(userConfig.testnetFlowAccount, flowTestnetConfig) :
-      getAccount("testnet-account", flowTestnetConfig),
-  }
+    testnetFlowAccount: userConfig.testnetFlowAccount
+      ? getAccount(userConfig.testnetFlowAccount, flowTestnetConfig)
+      : getAccount("testnet-account", flowTestnetConfig),
+
+    // This is the address of the testnet faucet website
+    faucetAddress:
+      userConfig.testNetFaulcetAddress || "https://testnet-faucet.onflow.org/",
+
+    testnetAccessAPI:
+      userConfig.testnetAccessAPI || "https://access-testnet.onflow.org",
+
+    testnetWalletDiscovery:
+      userConfig.testnetWalletDiscovery ||
+      "https://fcl-discovery.onflow.org/testnet/authn",
+
+    testnetNFTAddress:
+      userConfig.testnetNFTAddress ||
+      flowConfig.contracts.NonFUngibleToken.aliases.testnet,
+
+    testnetFTAddress:
+      userConfig.testnetFTAddress ||
+      flowConfig.contracts.FungibleToken.aliases.testnet
+  };
 }
 
 function getAccount(name, flowConfig) {
-  const account = flowConfig.accounts[name]
+  const account = flowConfig.accounts[name];
 
   return {
     name,
-    address: withPrefix(account.address),
-  }
+    address: withPrefix(account.address)
+  };
 }
 
 module.exports = getConfig;

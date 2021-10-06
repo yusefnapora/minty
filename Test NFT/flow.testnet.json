@@ -1,0 +1,15 @@
+{
+  "accounts": {
+    "testnet-account": {
+      "address": "${FLOW_TESTNET_ADDRESS}",
+      "key": "${FLOW_TESTNET_PRIVATE_KEY}"
+    }
+  },
+  "deployments": {
+    "testnet": {
+      "testnet-account": [
+        "TestNFT"
+      ]
+    }
+  }
+}

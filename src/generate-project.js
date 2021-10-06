@@ -42,54 +42,59 @@ async function writeFile(filePath, data) {
 
 async function createScaffold(dir) {
   await fs.copy(
-    path.resolve(__dirname, "templates/assets"), 
-    path.resolve(dir, "assets")
-  )
-
-  await fs.copy(
-    path.resolve(__dirname, "templates/ipfs-data"), 
+    path.resolve(__dirname, "templates/web"),
     path.resolve(dir, "ipfs-data")
-  )
+  );
 
   await fs.copy(
-    path.resolve(__dirname, "templates/mint-data"), 
+    path.resolve(__dirname, "templates/assets"),
+    path.resolve(dir, "assets")
+  );
+
+  await fs.copy(
+    path.resolve(__dirname, "templates/ipfs-data"),
+    path.resolve(dir, "ipfs-data")
+  );
+
+  await fs.copy(
+    path.resolve(__dirname, "templates/mint-data"),
     path.resolve(dir, "mint-data")
-  )
+  );
 
   await fs.copy(
-    path.resolve(__dirname, "templates/cadence/contracts/NonFungibleToken.cdc"), 
+    path.resolve(__dirname, "templates/cadence/contracts/NonFungibleToken.cdc"),
     path.resolve(dir, "cadence/contracts/NonFungibleToken.cdc")
-  )
+  );
 
   await fs.copy(
-    path.resolve(__dirname, "templates/minty.config.js"), 
+    path.resolve(__dirname, "templates/minty.config.js"),
     path.resolve(dir, "minty.config.js")
-  )
+  );
 
   await fs.copy(
-    path.resolve(__dirname, "templates/.env.example"), 
-    path.resolve(dir, ".env.example")
-  )
+    path.resolve(__dirname, "templates/.env.cli"),
+    path.resolve(dir, ".env")
+  );
 
   await fs.copy(
-    path.resolve(__dirname, "templates/nfts.csv"), 
+    path.resolve(__dirname, "templates/nfts.csv"),
     path.resolve(dir, "nfts.csv")
-  )
+  );
 
   await fs.copy(
-    path.resolve(__dirname, "templates/docker-compose.yml"), 
+    path.resolve(__dirname, "templates/docker-compose.yml"),
     path.resolve(dir, "docker-compose.yml")
-  )
-  
-  await fs.copy(
-    path.resolve(__dirname, "templates/cleanup.sh"), 
-    path.resolve(dir, "cleanup.sh")
-  )
+  );
 
   await fs.copy(
-    path.resolve(__dirname, "templates/.gitignore"), 
+    path.resolve(__dirname, "templates/cleanup.sh"),
+    path.resolve(dir, "cleanup.sh")
+  );
+
+  await fs.copy(
+    path.resolve(__dirname, "templates/.gitignore"),
     path.resolve(dir, ".gitignore")
-  )
+  );
 }
 
 async function createContract(dir, name) {
@@ -102,10 +107,7 @@ async function createContract(dir, name) {
 
   const result = template({ name });
 
-  await writeFile(
-    path.resolve(dir, `cadence/contracts/${name}.cdc`),
-    result
-  );
+  await writeFile(path.resolve(dir, `cadence/contracts/${name}.cdc`), result);
 }
 
 async function createSetupTransaction(dir, name) {
@@ -134,10 +136,7 @@ async function createMintTransaction(dir, name) {
 
   const result = template({ name });
 
-  await writeFile(
-    path.resolve(dir, "cadence/transactions/mint.cdc"),
-    result
-  );
+  await writeFile(path.resolve(dir, "cadence/transactions/mint.cdc"), result);
 }
 
 async function createReadScript(dir, name) {
@@ -150,10 +149,7 @@ async function createReadScript(dir, name) {
 
   const result = template({ name });
 
-  await writeFile(
-    path.resolve(dir, `cadence/scripts/get_nft.cdc`),
-    result
-  );
+  await writeFile(path.resolve(dir, `cadence/scripts/get_nft.cdc`), result);
 }
 
 async function createFlowConfig(dir, name) {
@@ -166,10 +162,7 @@ async function createFlowConfig(dir, name) {
 
   const result = template({ name });
 
-  await writeFile(
-    path.resolve(dir, "flow.json"),
-    result
-  );
+  await writeFile(path.resolve(dir, "flow.json"), result);
 }
 
 async function createFlowTestnetConfig(dir, name) {
@@ -182,10 +175,7 @@ async function createFlowTestnetConfig(dir, name) {
 
   const result = template({ name });
 
-  await writeFile(
-    path.resolve(dir, "flow.testnet.json"),
-    result
-  );
+  await writeFile(path.resolve(dir, "flow.testnet.json"), result);
 }
 
 async function createFlowMainnetConfig(dir, name) {
@@ -198,10 +188,7 @@ async function createFlowMainnetConfig(dir, name) {
 
   const result = template({ name });
 
-  await writeFile(
-    path.resolve(dir, "flow.mainnet.json"),
-    result
-  );
+  await writeFile(path.resolve(dir, "flow.mainnet.json"), result);
 }
 
 async function createReadme(dir, name) {
@@ -214,10 +201,7 @@ async function createReadme(dir, name) {
 
   const result = template({ name });
 
-  await writeFile(
-    path.resolve(dir, "README.md"),
-    result
-  );
+  await writeFile(path.resolve(dir, "README.md"), result);
 }
 
 module.exports = generateProject;

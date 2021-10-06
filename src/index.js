@@ -11,6 +11,7 @@ const colorize = require("json-colorizer");
 const ora = require("ora");
 const { MakeMinty } = require("./minty");
 const generateProject = require("./generate-project");
+const generateWebAssets = require("./generate-web");
 
 const colorizeOptions = {
   pretty: true,
@@ -28,9 +29,9 @@ async function main() {
   // commands
 
   program
-  .command("init")
-  .description("initialize a new project")
-  .action(init);
+    .command("create")
+    .description("initialize a new project")
+    .action(init);
 
   program
     .command("mint")
@@ -93,23 +94,21 @@ async function main() {
 async function init() {
   const questions = [
     {
-      type: 'input',
-      name: 'projectName',
-      message: "What's your project name? (e.g. my-nft-project)",
+      type: "input",
+      name: "projectName",
+      message: "What's your project name? (e.g. my-nft-project)"
     },
     {
-      type: 'input',
-      name: 'contractName',
-      message: "What's your contract name? (e.g. MyNFT)",
+      type: "input",
+      name: "contractName",
+      message: "What's your contract name? (e.g. MyNFT)"
     }
-  ]
+  ];
 
   const answers = await inquirer.prompt(questions);
 
-  await generateProject(
-    answers.projectName, 
-    answers.contractName,
-  );
+  await generateProject(answers.projectName, answers.contractName);
+  await generateWebAssets(answers.projectName, answers.projectName);
 
   console.log(
     `\nProject initialized in ./${answers.projectName}\n\ncd ${answers.projectName}`
@@ -118,14 +117,12 @@ async function init() {
 
 async function deploy({ network }) {
   const minty = await MakeMinty();
-  
+
   spinner.start(`Deploying project to ${network}`);
 
   await minty.deployContracts();
 
-  spinner.succeed(
-    `✨ Success! Project deployed to ${network} ✨`
-  );
+  spinner.succeed(`✨ Success! Project deployed to ${network} ✨`);
 }
 
 async function batchMintNFT(options) {
