@@ -39,7 +39,7 @@ module.exports = {
     return config;
   },
   publicRuntimeConfig: {
-    appName: "NFT Drop",
-    ...getConfig(process.env.NETWORK),
+    appName: "{{ name }}",
+    ...getConfig(process.env.NETWORK)
   }
 };

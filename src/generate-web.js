@@ -33,11 +33,22 @@ async function generateWebAssets(dir, name) {
     "utf8"
   );
 
+  const nextConfig = await fs.readFile(
+    path.resolve(__dirname, "templates/web/next.config.js"),
+    "utf8"
+  );
+
   const packageJSONTemplate = Handlebars.compile(packageJSON);
+  const nextConfigTemplate = Handlebars.compile(nextConfig);
 
   await writeFile(
     path.resolve(dir, `package.json`),
-    packageJSONTemplate({ dir })
+    packageJSONTemplate({ name })
+  );
+
+  await writeFile(
+    path.resolve(dir, `next.config.js`),
+    nextConfigTemplate({ name })
   );
 
   const replaceImportsScript = await fs.readFile(
