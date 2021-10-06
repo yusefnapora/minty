@@ -69,7 +69,7 @@ async function createScaffold(dir) {
   );
 
   await fs.copy(
-    path.resolve(__dirname, "templates/.env.cli"),
+    path.resolve(__dirname, "templates/.env.template"),
     path.resolve(dir, ".env")
   );
 

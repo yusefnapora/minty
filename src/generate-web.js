@@ -27,60 +27,30 @@ async function writeFile(filePath, data) {
 }
 
 async function generateWebAssets(dir, name) {
-  const config = getConfig();
-  const flowConfig = require(path.resolve(__dirname, `../${dir}/flow.json`));
-
-  const webEnv = await fs.readFile(
-    path.resolve(__dirname, "templates/.env.web"),
-    "utf8"
-  );
+  await fs.copy(path.resolve(__dirname, "templates/web"), dir);
 
   const packageJSON = await fs.readFile(
-    path.resolve(__dirname, "templates/web/package.json"),
+    path.resolve(__dirname, `templates/web/package.json`),
     "utf8"
   );
 
   const packageJSONNameApplied = Handlebars.compile(packageJSON);
-  const webLocalEnvTemplate = Handlebars.compile(webEnv);
-  const webTestnetEnvTemplate = Handlebars.compile(webEnv);
-
-  const webLocalEnv = webLocalEnvTemplate({
-    dir,
-    chainEnv: "emulator",
-    faucetAddress: config.faucetAddress,
-    accessAPI: config.emulatorAccessAPI,
-    walletDiscovery: config.emulatorWalletDiscovery,
-    nftAddress: config.emualtorNFTAddress,
-    projectContractAddress: flowConfig.contracts[name].aliases.emulator
-  });
-
-  const webTestnetEnv = webTestnetEnvTemplate({
-    dir,
-    chainEnv: "emulator",
-    faucetAddress: config.faucetAddress,
-    accessAPI: config.testnetAccessAPI,
-    walletDiscovery: config.testnetWalletDiscovery,
-    nftAddress: config.testnetNFTAddress,
-    projectContractAddress: flowConfig.contracts[name].aliases.testnet
-  });
 
   await writeFile(
-    path.resolve(__dirname, "templates/web/package.json"),
+    path.resolve(dir, `package.json`),
     packageJSONNameApplied({ name })
   );
 
-  await fs.copy(
-    path.resolve(__dirname, "templates/web"),
-    path.resolve(dir, "web")
+  const getNFTScript = await fs.readFile(
+    path.resolve(__dirname, "templates/web/flow/get_nft.js"),
+    "utf8"
   );
 
+  const getNFTScriptNameApplied = Handlebars.compile(getNFTScript);
+
   await writeFile(
-    path.resolve(__dirname, `../${dir}/web/.env.local`),
-    webLocalEnv
-  );
-  await writeFile(
-    path.resolve(__dirname, `../${dir}/web/.env.testnet`),
-    webTestnetEnv
+    path.resolve(dir, `flow/get_nft.js`),
+    getNFTScriptNameApplied({ name })
   );
 }
 

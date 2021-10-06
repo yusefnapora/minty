@@ -8,7 +8,4 @@ config()
   .put("app.detail.icon", "/flow.svg")
   .put("app.detail.title", publicRuntimeConfig.appName)
   .put("accessNode.api", publicRuntimeConfig.flowAccessAPI)
-  .put("discovery.wallet", publicRuntimeConfig.fclWalletDiscovery)
-
-  .put("0xNFT", publicRuntimeConfig.nonFungibleTokenAddress)
-  .put("0xBallerNFT", publicRuntimeConfig.projectNFTContract);
+  .put("discovery.wallet", publicRuntimeConfig.fclWalletDiscovery);

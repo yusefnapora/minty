@@ -4,6 +4,7 @@ const { withPrefix } = require("@onflow/util-address");
 function getConfig() {
   require("dotenv").config({ path: path.resolve(process.env.PWD, ".env") });
 
+  // TOOD: Inform when config is missing
   const userConfig = require(path.resolve(process.env.PWD, "minty.config.js"));
 
   const flowConfig = require(path.resolve(process.env.PWD, "flow.json"));
@@ -62,18 +63,6 @@ function getConfig() {
       ? getAccount(userConfig.emulatorFlowAccount, flowConfig)
       : getAccount("emulator-account", flowConfig),
 
-    emulatorAccessAPI: userConfig.emulatorAccessAPI || "http://localhost:8080",
-    emulatorWalletDiscovery:
-      userConfig.emulatorWalletDiscovery || "http://localhost:8701/fcl/authn",
-
-    emulatorNFTAddress:
-      userConfig.emulatorNFTAddress ||
-      getContractAddress("NonFungibleToken", "emulator", flowConfig),
-
-    emualtorFTAddress:
-      userConfig.emulatorFTAddress ||
-      getContractAddress("FungibleToken", "emulator", flowConfig),
-
     //////////////////////////////////////////////
     // ------ Testnet Configs
     //////////////////////////////////////////////
@@ -81,26 +70,7 @@ function getConfig() {
     // This is the default owner address and signing key for all newly minted NFTs
     testnetFlowAccount: userConfig.testnetFlowAccount
       ? getAccount(userConfig.testnetFlowAccount, flowTestnetConfig)
-      : getAccount("testnet-account", flowTestnetConfig),
-
-    // This is the address of the testnet faucet website
-    faucetAddress:
-      userConfig.testNetFaulcetAddress || "https://testnet-faucet.onflow.org/",
-
-    testnetAccessAPI:
-      userConfig.testnetAccessAPI || "https://access-testnet.onflow.org",
-
-    testnetWalletDiscovery:
-      userConfig.testnetWalletDiscovery ||
-      "https://fcl-discovery.onflow.org/testnet/authn",
-
-    testnetNFTAddress:
-      userConfig.testnetNFTAddress ||
-      getContractAddress("NonFungibleToken", "testnet", flowConfig),
-
-    testnetFTAddress:
-      userConfig.testnetFTAddress ||
-      getContractAddress("FungibleToken", "testnet", flowConfig)
+      : getAccount("testnet-account", flowTestnetConfig)
   };
 }
 

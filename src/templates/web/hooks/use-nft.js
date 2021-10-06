@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import getNFT from "../flow/get-nft";
+import getNFT from "../flow/get_nft";
 
 export default function useCurrentUser(address, id) {
   const [nft, setNFT] = useState({ loading: true, notfound: undefined });
