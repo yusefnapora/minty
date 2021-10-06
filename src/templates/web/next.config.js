@@ -38,5 +38,8 @@ module.exports = {
     });
     return config;
   },
-  publicRuntimeConfig: getConfig(process.env.NETWORK)
+  publicRuntimeConfig: {
+    appName: "{{ name }}",
+    ...getConfig(process.env.NETWORK)
+  }
 };

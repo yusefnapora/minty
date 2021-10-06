@@ -31,6 +31,22 @@ class FlowMinter {
     )
   }
 
+  async startDrop() {
+    return await this.flow.transaction(
+      "./cadence/transactions/start_drop.cdc",
+      `${this.network}-account`,
+      []
+    )
+  }
+
+  async removeDrop() {
+    return await this.flow.transaction(
+      "./cadence/transactions/remove_drop.cdc",
+      `${this.network}-account`,
+      []
+    )
+  }
+
   async transfer(recipient, itemID) {
     // TODO
   }

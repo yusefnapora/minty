@@ -7,9 +7,15 @@ async function generateProject(projectName, contractName) {
   await createScaffold(projectName);
 
   await createContract(projectName, contractName);
+
   await createSetupTransaction(projectName, contractName);
   await createMintTransaction(projectName, contractName);
-  await createReadScript(projectName, contractName);
+  await createClaimTransaction(projectName, contractName);
+  await createStartDropTransaction(projectName, contractName);
+  await createRemoveDropTransaction(projectName, contractName);
+
+  await createGetNFTScript(projectName, contractName);
+  await createGetDropScript(projectName, contractName);
 
   await createFlowConfig(projectName, contractName);
   await createFlowTestnetConfig(projectName, contractName);
@@ -136,7 +142,46 @@ async function createMintTransaction(dir, name) {
   await writeFile(path.resolve(dir, "cadence/transactions/mint.cdc"), result);
 }
 
-async function createReadScript(dir, name) {
+async function createClaimTransaction(dir, name) {
+  const src = await fs.readFile(
+    path.resolve(__dirname, "templates/cadence/transactions/claim_nft.cdc"),
+    "utf8"
+  );
+
+  const template = Handlebars.compile(src);
+
+  const result = template({ name });
+
+  await writeFile(path.resolve(dir, "cadence/transactions/claim_nft.cdc"), result);
+}
+
+async function createStartDropTransaction(dir, name) {
+  const src = await fs.readFile(
+    path.resolve(__dirname, "templates/cadence/transactions/start_drop.cdc"),
+    "utf8"
+  );
+
+  const template = Handlebars.compile(src);
+
+  const result = template({ name });
+
+  await writeFile(path.resolve(dir, "cadence/transactions/start_drop.cdc"), result);
+}
+
+async function createRemoveDropTransaction(dir, name) {
+  const src = await fs.readFile(
+    path.resolve(__dirname, "templates/cadence/transactions/remove_drop.cdc"),
+    "utf8"
+  );
+
+  const template = Handlebars.compile(src);
+
+  const result = template({ name });
+
+  await writeFile(path.resolve(dir, "cadence/transactions/remove_drop.cdc"), result);
+}
+
+async function createGetNFTScript(dir, name) {
   const nftTemplate = await fs.readFile(
     path.resolve(__dirname, "templates/cadence/scripts/get_nft.cdc"),
     "utf8"
@@ -147,6 +192,19 @@ async function createReadScript(dir, name) {
   const result = template({ name });
 
   await writeFile(path.resolve(dir, `cadence/scripts/get_nft.cdc`), result);
+}
+
+async function createGetDropScript(dir, name) {
+  const src = await fs.readFile(
+    path.resolve(__dirname, "templates/cadence/scripts/get_drop.cdc"),
+    "utf8"
+  );
+
+  const template = Handlebars.compile(src);
+
+  const result = template({ name });
+
+  await writeFile(path.resolve(dir, `cadence/scripts/get_drop.cdc`), result);
 }
 
 async function createFlowConfig(dir, name) {

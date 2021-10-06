@@ -13,13 +13,72 @@ pub contract {{ name }}: NonFungibleToken {
     //
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
-    pub let MinterStoragePath: StoragePath
+    pub let CollectionPrivatePath: PrivatePath
+    pub let AdminStoragePath: StoragePath
 
     // totalSupply
     // The total number of {{ name }} that have been minted
     //
     pub var totalSupply: UInt64
     pub var tokenName: String
+
+    pub enum DropStatus: UInt8 {
+        pub case open
+        pub case paused
+        pub case closed
+    }
+
+    pub struct Drop {
+
+        access(self) let collection: Capability<&Collection>
+
+        pub var size: Int
+        pub var status: DropStatus
+
+        pub fun pause() {
+            self.status = DropStatus.paused
+        }
+
+        pub fun resume() {
+            pre {
+                self.status != DropStatus.closed : "Cannot resume drop that is closed"
+            }
+
+            self.status = DropStatus.open
+        }
+
+        pub fun close() {
+            self.status = DropStatus.closed
+        }
+
+        pub fun supply(): Int {
+            return self.collection.borrow()!.size()
+        }
+
+        pub fun complete(): Bool {
+            return self.supply() == 0
+        }
+
+        access(contract) fun pop(): @NonFungibleToken.NFT {
+            let collection = self.collection.borrow()!
+
+            let nft <- collection.pop()
+
+            if collection.size() == 0 {
+                self.close()
+            }
+
+            return <- nft
+        }
+
+        init(collection: Capability<&Collection>) {
+            self.collection = collection
+            self.size = collection.borrow()!.size()
+            self.status = DropStatus.open
+        }
+    }
+
+    pub var drop: Drop?
 
     pub resource NFT: NonFungibleToken.INFT {
 
@@ -110,6 +169,15 @@ pub contract {{ name }}: NonFungibleToken {
             }
         }
 
+        pub fun pop(): @NonFungibleToken.NFT {
+            let nextID = self.ownedNFTs.keys[0]
+            return <- self.withdraw(withdrawID: nextID)
+        }
+
+        pub fun size(): Int {
+            return self.ownedNFTs.length
+        }
+
         // destructor
         destroy() {
             destroy self.ownedNFTs
@@ -129,11 +197,10 @@ pub contract {{ name }}: NonFungibleToken {
         return <- create Collection()
     }
 
-    // NFTMinter
-    // Resource that an admin or something similar would own to be
-    // able to mint new NFTs
+    // Admin
+    // Resource that an admin can use to mint NFTs and manage drops.
     //
-	pub resource NFTMinter {
+	pub resource Admin {
 
 		// mintNFT
         // Mints a new NFT with a new ID
@@ -147,6 +214,22 @@ pub contract {{ name }}: NonFungibleToken {
 
             {{ name }}.totalSupply = {{ name }}.totalSupply + (1 as UInt64)
 		}
+
+        pub fun startDrop(collection: Capability<&Collection>) {
+            {{ name }}.drop = Drop(collection: collection)
+        }
+
+        pub fun pauseDrop() {
+            {{ name }}.drop!.pause()
+        }
+
+        pub fun resumeDrop() {
+            {{ name }}.drop!.resume()
+        }
+
+        pub fun removeDrop() {
+            {{ name }}.drop = nil
+        }
 	}
 
     // fetch
@@ -160,26 +243,54 @@ pub contract {{ name }}: NonFungibleToken {
             .getCapability({{ name }}.CollectionPublicPath)!
             .borrow<&{ {{ name }}.{{ name }}CollectionPublic }>()
             ?? panic("Couldn't get collection")
+
         // We trust {{ name }}.Collection.borow{{ name }} to get the correct itemID
         // (it checks it before returning it).
         return collection.borrow{{ name }}(id: itemID)
+    }
+
+    pub fun getDrop(): Drop? {
+        return {{ name }}.drop
+    }
+
+    pub fun claim(recipient: &{NonFungibleToken.CollectionPublic}) {
+        pre {
+            {{ name }}.drop != nil : "No active drop"
+            {{ name }}.drop!.status != DropStatus.paused : "Drop is paused"
+            {{ name }}.drop!.status != DropStatus.closed : "Drop is closed"
+        }
+
+        let nft <- {{ name }}.drop!.pop()
+
+        recipient.deposit(token: <-nft)
     }
 
     // initializer
     //
 	init() {
         self.tokenName = "{{ name }}"
+        self.drop = nil
+
         // Set our named paths
         self.CollectionStoragePath = /storage/{{ name }}Collection
         self.CollectionPublicPath = /public/{{ name }}Collection
-        self.MinterStoragePath = /storage/{{ name }}Minter
+        self.CollectionPrivatePath = /private/{{ name }}Collection
+        self.AdminStoragePath = /storage/{{ name }}Admin
 
         // Initialize the total supply
         self.totalSupply = 0
 
-        // Create a Minter resource and save it to storage
-        let minter <- create NFTMinter()
-        self.account.save(<-minter, to: self.MinterStoragePath)
+        let collection <- {{ name }}.createEmptyCollection()
+        
+        self.account.save(<-collection, to: {{ name }}.CollectionStoragePath)
+
+        self.account.link<&{{ name }}.Collection>({{ name }}.CollectionPrivatePath, target: {{ name }}.CollectionStoragePath)
+
+        self.account.link<&{{ name }}.Collection{NonFungibleToken.CollectionPublic, {{ name }}.{{ name }}CollectionPublic}>({{ name }}.CollectionPublicPath, target: {{ name }}.CollectionStoragePath)
+        
+        // Create an admin resource and save it to storage
+        let admin <- create Admin()
+        self.account.save(<-admin, to: self.AdminStoragePath)
 
         emit ContractInitialized()
 	}

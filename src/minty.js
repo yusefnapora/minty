@@ -1,7 +1,6 @@
 const fs = require("fs/promises");
 const path = require("path");
 const CID = require("cids");
-const { uid } = require("@onflow/util-uid");
 const { NFTStorage, Blob } = require("nft.storage");
 const Nebulus = require("nebulus");
 const ora = require("ora");
@@ -162,16 +161,19 @@ class Minty {
     };
 
     await fs.writeFile(
-      path.resolve(
-        process.env.PWD,
-        this.config.mintDataPath +
-          `/${details.tokenId}-${new Date().toISOString()}-${uid()}.json`
-      ),
+      this.getAssetPath(details.tokenId),
       JSON.stringify(details),
       "utf8"
     );
 
     return details;
+  }
+
+  getAssetPath(tokenId) {
+    return path.resolve(
+      process.env.PWD,
+      `${this.config.mintDataPath}/${tokenId}.json`
+    )
   }
 
   /**
@@ -278,12 +280,14 @@ class Minty {
    * metadata URI. Fails if the token does not exist, or if fetching the data fails.
    */
   async getNFTMetadata(tokenId) {
-    const flowData = await this.flowMinter.getNFTDetails(
-      this.config.emulatorFlowAccount.address,
-      tokenId
+    const assetRaw = await fs.readFile(this.getAssetPath(tokenId), "utf8")
+    const assetJson = JSON.parse(assetRaw)
+
+    const metadataCid = await this.nebulus.add(
+      Buffer.from(JSON.stringify(assetJson.metadata))
     );
 
-    const metadataURI = flowData.metadata;
+    const metadataURI = ensureIpfsUriPrefix(metadataCid);
     const metadata = await this.getIPFSJSON(metadataURI);
 
     return { metadata, metadataURI };
@@ -310,6 +314,14 @@ class Minty {
 
   async transferToken(tokenId, toAddress) {
     // TODO
+  }
+
+  async startDrop() {
+    await this.flowMinter.startDrop();
+  }
+
+  async removeDrop() {
+    await this.flowMinter.removeDrop();
   }
 
   /**
@@ -365,7 +377,6 @@ class Minty {
       const pin = async (cid) => {
         const data = await fs.readFile(
           path.resolve(process.env.PWD, `ipfs-data/ipfs/${cid}`),
-          "utf8"
         );
         return await this.ipfs.storeBlob(new Blob([data]));
       };

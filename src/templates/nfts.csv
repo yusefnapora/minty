@@ -1,3 +1,2 @@
-name,description,meta-attr:1,meta-attr:2,asset
-Testy McTest,A tested NFT,textfile,winning,test-asset.txt
-Another One,Yet another tested NFT,something,ok,test-asset.txt
+name,description,age,color,asset
+Lady,Lady the dog is an 11-year-old black lab.,11,black,lady.jpg

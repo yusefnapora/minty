@@ -1,7 +1,6 @@
 const fs = require("fs-extra");
 const path = require("path");
 const Handlebars = require("handlebars");
-const getConfig = require("./config");
 
 async function isExists(path) {
   try {
@@ -30,27 +29,38 @@ async function generateWebAssets(dir, name) {
   await fs.copy(path.resolve(__dirname, "templates/web"), dir);
 
   const packageJSON = await fs.readFile(
-    path.resolve(__dirname, `templates/web/package.json`),
+    path.resolve(__dirname, "templates/web/package.json"),
     "utf8"
   );
 
-  const packageJSONNameApplied = Handlebars.compile(packageJSON);
+  const nextConfig = await fs.readFile(
+    path.resolve(__dirname, "templates/web/next.config.js"),
+    "utf8"
+  );
+
+  const packageJSONTemplate = Handlebars.compile(packageJSON);
+  const nextConfigTemplate = Handlebars.compile(nextConfig);
 
   await writeFile(
     path.resolve(dir, `package.json`),
-    packageJSONNameApplied({ name })
+    packageJSONTemplate({ name })
   );
 
-  const getNFTScript = await fs.readFile(
-    path.resolve(__dirname, "templates/web/flow/get_nft.js"),
+  await writeFile(
+    path.resolve(dir, `next.config.js`),
+    nextConfigTemplate({ name })
+  );
+
+  const replaceImportsScript = await fs.readFile(
+    path.resolve(__dirname, "templates/web/src/flow/replace-imports.js"),
     "utf8"
   );
 
-  const getNFTScriptNameApplied = Handlebars.compile(getNFTScript);
+  const replaceImportsScriptTemplate = Handlebars.compile(replaceImportsScript);
 
   await writeFile(
-    path.resolve(dir, `flow/get_nft.js`),
-    getNFTScriptNameApplied({ name })
+    path.resolve(dir, `src/flow/replace-imports.js`),
+    replaceImportsScriptTemplate({ name })
   );
 }
 

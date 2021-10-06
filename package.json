@@ -19,7 +19,6 @@
     "@onflow/decode": "0.0.11",
     "@onflow/types": "0.0.5",
     "@onflow/util-address": "0.0.0",
-    "@onflow/util-uid": "0.0.1",
     "chalk": "^4.1.0",
     "cids": "^1.1.6",
     "commander": "^7.1.0",
