@@ -68,11 +68,11 @@ function getConfig() {
 
     emulatorNFTAddress:
       userConfig.emulatorNFTAddress ||
-      flowConfig.contracts.NonFUngibleToken.aliases.emulator,
+      getContractAddress("NonFungibleToken", "emulator", flowConfig),
 
     emualtorFTAddress:
       userConfig.emulatorFTAddress ||
-      flowConfig.contracts.FungibleToken.aliases.emulator,
+     getContractAddress("FungibleToken", "emulator", flowConfig),
 
     //////////////////////////////////////////////
     // ------ Testnet Configs
@@ -96,11 +96,11 @@ function getConfig() {
 
     testnetNFTAddress:
       userConfig.testnetNFTAddress ||
-      flowConfig.contracts.NonFUngibleToken.aliases.testnet,
+      getContractAddress("NonFungibleToken", "testnet", flowConfig),
 
     testnetFTAddress:
       userConfig.testnetFTAddress ||
-      flowConfig.contracts.FungibleToken.aliases.testnet
+      getContractAddress("FungibleToken", "testnet", flowConfig),
   };
 }
 
@@ -111,6 +111,10 @@ function getAccount(name, flowConfig) {
     name,
     address: withPrefix(account.address)
   };
+}
+
+function getContractAddress(name, network, flowConfig) {
+   return flowConfig.contracts[name].aliases[network],
 }
 
 module.exports = getConfig;
