@@ -26,7 +26,7 @@ async function writeFile(filePath, data) {
   }
 }
 
-async function createWebAssets(dir, name) {
+async function generateWebAssets(dir, name) {
   const config = getConfig();
   const flowConfig = require(path.resolve(__dirname, `../${dir}/flow.json`));
 
@@ -73,4 +73,4 @@ async function createWebAssets(dir, name) {
   );
 }
 
-module.exports = createWebAssets;
+module.exports = generateWebAssets;

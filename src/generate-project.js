@@ -1,6 +1,7 @@
 const fs = require("fs-extra");
 const path = require("path");
 const Handlebars = require("handlebars");
+const generateWebAssets = require("./generate-web");
 
 async function generateProject(projectName, contractName) {
   await createScaffold(projectName);
@@ -14,6 +15,7 @@ async function generateProject(projectName, contractName) {
   await createFlowTestnetConfig(projectName, contractName);
   await createFlowMainnetConfig(projectName, contractName);
 
+  await createWebAssets(projectName, contractName);
   await createReadme(projectName, contractName);
 }
 
@@ -41,11 +43,6 @@ async function writeFile(filePath, data) {
 }
 
 async function createScaffold(dir) {
-  await fs.copy(
-    path.resolve(__dirname, "templates/web"),
-    path.resolve(dir, "ipfs-data")
-  );
-
   await fs.copy(
     path.resolve(__dirname, "templates/assets"),
     path.resolve(dir, "assets")
@@ -202,6 +199,10 @@ async function createReadme(dir, name) {
   const result = template({ name });
 
   await writeFile(path.resolve(dir, "README.md"), result);
+}
+
+async function createWebAssets(dir, name) {
+  await generateWebAssets(dir, name);
 }
 
 module.exports = generateProject;
