@@ -72,7 +72,7 @@ function getConfig() {
 
     emualtorFTAddress:
       userConfig.emulatorFTAddress ||
-     getContractAddress("FungibleToken", "emulator", flowConfig),
+      getContractAddress("FungibleToken", "emulator", flowConfig),
 
     //////////////////////////////////////////////
     // ------ Testnet Configs
@@ -100,7 +100,7 @@ function getConfig() {
 
     testnetFTAddress:
       userConfig.testnetFTAddress ||
-      getContractAddress("FungibleToken", "testnet", flowConfig),
+      getContractAddress("FungibleToken", "testnet", flowConfig)
   };
 }
 
@@ -114,7 +114,7 @@ function getAccount(name, flowConfig) {
 }
 
 function getContractAddress(name, network, flowConfig) {
-   return flowConfig.contracts[name].aliases[network],
+  return flowConfig.contracts[name].aliases[network];
 }
 
 module.exports = getConfig;
