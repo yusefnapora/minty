@@ -1,5 +1,5 @@
 {
-  "name": "nft-sale-app",
+  "name": "{{name}}",
   "version": "0.1.0",
   "private": true,
   "scripts": {

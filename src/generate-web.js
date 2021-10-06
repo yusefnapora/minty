@@ -30,16 +30,17 @@ async function generateWebAssets(dir, name) {
   const config = getConfig();
   const flowConfig = require(path.resolve(__dirname, `../${dir}/flow.json`));
 
-  await fs.copy(
-    path.resolve(__dirname, "templates/web"),
-    path.resolve(dir, "web")
-  );
-
   const webEnv = await fs.readFile(
     path.resolve(__dirname, "templates/.env.web"),
     "utf8"
   );
 
+  const packageJSON = await fs.readFile(
+    path.resolve(__dirname, "templates/web/package.json"),
+    "utf8"
+  );
+
+  const packageJSONNameApplied = Handlebars.compile(packageJSON);
   const webLocalEnvTemplate = Handlebars.compile(webEnv);
   const webTestnetEnvTemplate = Handlebars.compile(webEnv);
 
@@ -62,6 +63,16 @@ async function generateWebAssets(dir, name) {
     nftAddress: config.testnetNFTAddress,
     projectContractAddress: flowConfig.contracts[name].aliases.testnet
   });
+
+  await writeFile(
+    path.resolve(__dirname, "templates/web/package.json"),
+    packageJSONNameApplied({ name })
+  );
+
+  await fs.copy(
+    path.resolve(__dirname, "templates/web"),
+    path.resolve(dir, "web")
+  );
 
   await writeFile(
     path.resolve(__dirname, `../${dir}/web/.env.local`),
