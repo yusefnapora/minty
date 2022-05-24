@@ -27,7 +27,7 @@
     "commander": "^7.1.0",
     "concurrently": "^6.0.0",
     "getconfig": "^4.5.0",
-    "go-ipfs": "^0.8.0",
+    "go-ipfs": "^0.12.2",
     "inquirer": "^8.0.0",
     "ipfs-http-client": "^49.0.4",
     "it-all": "^1.0.5",
