@@ -7,7 +7,7 @@ const all = require('it-all')
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayToString = require('uint8arrays/to-string')
 const {BigNumber} = require('ethers')
-
+const { ethers } = require("ethers")
 
 const { loadDeploymentInfo } = require('./deploy')
 
@@ -255,8 +255,11 @@ class Minty {
         // Call the mintToken method to issue a new token to the given address
         // This returns a transaction object, but the transaction hasn't been confirmed
         // yet, so it doesn't have our token id.
-        const tx = await this.contract.mintToken(ownerAddress, metadataURI)
-
+        const tx = await this.contract.mintToken(ownerAddress, metadataURI,{
+            gasLimit: 500_000,
+            value: ethers.utils.parseEther("0.08")
+        });
+        
         // The OpenZeppelin base ERC721 contract emits a Transfer event when a token is issued.
         // tx.wait() will wait until a block containing our transaction has been mined and confirmed.
         // The transaction receipt contains events emitted while processing the transaction.
