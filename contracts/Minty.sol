@@ -10,8 +10,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Minty is ERC721, PullPayment, Ownable  {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
-    string public baseTokenURI;
+    string public baseTokenURI; 
+    uint256 public constant MINT_PRICE = 0.08 ether;
     mapping (uint256 => string) private _tokenURIs;
+    
     
     constructor(string memory tokenName, string memory symbol) ERC721(tokenName, symbol) {
         baseTokenURI = "ipfs://";
@@ -20,6 +22,7 @@ contract Minty is ERC721, PullPayment, Ownable  {
     function mintToken(address owner, string memory metadataURI)
     public payable returns (uint256)
     {
+        require(msg.value == MINT_PRICE, "Transaction value did not equal the mint price");
         _tokenIds.increment();
 
         uint256 id = _tokenIds.current();
