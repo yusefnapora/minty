@@ -1,15 +1,28 @@
-require("@nomiclabs/hardhat-waffle");
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
-module.exports = {
-    solidity: "0.7.3",
 
-    defaultNetwork: 'localhost',
+require("@nomiclabs/hardhat-waffle");
+require('dotenv').config();
+const { ALCHEMY_KEY, ACCOUNT_PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
+
+module.exports = {
+    solidity: "0.8.1",
+    defaultNetwork: 'rinkeby',
     networks: {
         hardhat: {},
-        localhost: {},
+        rinkeby: {
+            url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_KEY}`,
+            accounts: [`0x${ACCOUNT_PRIVATE_KEY}`]
+          },
+          ethereum: {
+            chainId: 1,
+            url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
+            accounts: [`0x${ACCOUNT_PRIVATE_KEY}`]
+          },
+        //   etherscan: {
+        //     apiKey: ETHERSCAN_API_KEY,
+        //   },
     }
 };
-
