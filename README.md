@@ -163,3 +163,19 @@ minty pin 1
 ```
 
 The `pin` command looks for some configuration info to connect to the remote pinning service. See the [Configuration section](#configuration) above for details.
+
+//npx hardhat verify --network rinkeby 0xcC17B83373fDb75C5e1F6F074437249C53A026F5  "Julep" "JLP"  
+
+### Verify Contract for EtherScan 
+
+You can now verify your NFT contract on etherscan. Run this command line, but make sure to replace the contract address with your deployed contract address. Also, please input the name and contract ticker. 
+
+```shell
+npx hardhat verify --network rinkeby {CONTRACT_ADDRESS}  "CONTRACT_NAME" "CONTRACT_TICKER"
+Successfully submitted source code for contract
+contracts/Minty.sol:Minty at 0xcC17B83373fDb75C5e1F6F074437249C53A026F5
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract Minty on Etherscan.
+https://rinkeby.etherscan.io/address/0xcC17B83373fDb75C5e1F6F074437249C53A026F5#code
+```
