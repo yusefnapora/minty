@@ -1,7 +1,7 @@
 {
   "name": "minty",
   "version": "1.0.0",
-  "description": "",
+  "description": "Minty is an example of how to _mint_ non-fungible tokens (NFTs) while storing the associated data on IPFS. You can also use Minty to pin your data on an IPFS pinning service such as [nft.storage](https://nft.storage) and [Pinata](https://pinata.cloud).",
   "main": "src/minty.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,6 +14,7 @@
   "license": "ISC",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.1",
+    "@nomiclabs/hardhat-etherscan": "^3.0.0",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "chai": "^4.3.3",
     "ethereum-waffle": "^3.3.0",
@@ -21,17 +22,29 @@
     "hardhat": "^2.1.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^3.4.1",
+    "@openzeppelin/contracts": "^4.4.0",
     "chalk": "^4.1.0",
     "cids": "^1.1.6",
     "commander": "^7.1.0",
     "concurrently": "^6.0.0",
     "getconfig": "^4.5.0",
-    "go-ipfs": "^0.8.0",
+    "go-ipfs": "^0.12.0",
     "inquirer": "^8.0.0",
     "ipfs-http-client": "^49.0.4",
     "it-all": "^1.0.5",
     "json-colorizer": "^2.2.2",
-    "multiaddr": "^8.1.2"
-  }
+    "multiaddr": "^8.1.2",
+    "dotenv": "^10.0.0"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yusefnapora/minty.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yusefnapora/minty/issues"
+  },
+  "homepage": "https://github.com/yusefnapora/minty#readme"
 }
